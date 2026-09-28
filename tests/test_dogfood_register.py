@@ -59,14 +59,14 @@ def test_dogfood_register_preserves_historical_runs() -> None:
 
 
 def test_full_reorg_prompt_stays_historical_and_out_of_the_next_run() -> None:
-    text = DOGFOOD.read_text()
+    text = " ".join(DOGFOOD.read_text().split())
     prompt = (DOGFOOD_PROMPTS / "full_reorg_owner_prompt.txt").read_text()
 
     assert "more fitting Areas" in prompt
     assert "useful tags" in prompt
     assert "rework or restructure existing Projects" in prompt
     assert "Status: **Deferred**." in text
-    assert "Do not rerun that prompt" in text
+    assert "Do not rerun that prompt." in text
     assert "unsupported broad reorganization actions are" not in text
     assert "Repeat required**, after unsupported" not in text
 
