@@ -603,6 +603,47 @@ def test_retry_policy_dead_letters_at_maximum_event_age() -> None:
     assert recorded == [("dead", None)]
 
 
+def test_retry_after_is_capped_by_jittered_backoff_ceiling() -> None:
+    recorded: list[int | None] = []
+
+    class Store(_UnusedStore):
+        def record_attempt(
+            self,
+            event_id: str,
+            *,
+            attempted_at: int,
+            state: str,
+            next_attempt_at: int | None,
+            http_status: int | None,
+            result: str,
+        ) -> None:
+            assert event_id == "evt_retry_after"
+            assert attempted_at == 1_000
+            assert state == "pending"
+            assert http_status == 429
+            assert result == "retryable_http"
+            recorded.append(next_attempt_at)
+
+    worker = RoutineWorker(
+        profile=_profile(),
+        cloud=_UnusedCloud(),
+        store=Store(),
+        webhook=_UnusedWebhook(),
+        epoch=lambda: 1_000,
+        jitter=lambda _ceiling: 0,
+    )
+
+    async def exercise() -> None:
+        await worker._record_delivery(
+            StoredEvent("evt_retry_after", "routine", "task", 900, b"{}", 0),
+            DeliveryResult("retry", "retryable_http", 429, retry_after_seconds=100),
+        )
+
+    anyio.run(exercise)
+
+    assert recorded == [1_005]
+
+
 def test_accepted_then_crashed_delivery_retries_same_event_as_duplicate(
     tmp_path: Path,
 ) -> None:

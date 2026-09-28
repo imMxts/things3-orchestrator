@@ -260,15 +260,9 @@ class RoutineWorker:
                     attempts,
                     float(self._profile.retry.initial_delay_seconds),
                     float(self._profile.retry.max_delay_seconds),
+                    retry_after=result.retry_after_seconds,
                 )
             )
-            if result.retry_after_seconds is not None:
-                ceiling = min(
-                    self._profile.retry.max_delay_seconds,
-                    self._profile.retry.initial_delay_seconds
-                    * (2 ** min(event.attempt_count, 30)),
-                )
-                delay = max(delay, min(result.retry_after_seconds, ceiling))
             next_attempt = now + delay
         await self._sync(
             partial(
@@ -305,12 +299,19 @@ class RoutineWorker:
         )
 
     def _jittered_backoff(
-        self, failures_or_attempts: int, initial: float, cap: float
+        self,
+        failures_or_attempts: int,
+        initial: float,
+        cap: float,
+        retry_after: int | None = None,
     ) -> float:
         ceiling = min(
             cap, initial * (2 ** min(max(failures_or_attempts - 1, 0), 30))
         )
-        return max(1.0, self._jitter(ceiling))
+        delay = max(1.0, self._jitter(ceiling))
+        if retry_after is not None:
+            delay = max(delay, min(float(retry_after), ceiling))
+        return delay
 
     def _snapshot_for(
         self,

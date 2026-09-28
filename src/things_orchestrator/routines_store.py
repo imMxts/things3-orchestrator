@@ -310,26 +310,7 @@ class RoutineStore:
         self._require_open()
         with closing(self._connect()) as connection, connection:
             meta = self._meta(connection)
-            states = dict(
-                connection.execute("SELECT state, COUNT(*) FROM events GROUP BY state")
-            )
-            last_delivery_at = _last_delivery_at(connection)
-            ai_tags = int(
-                connection.execute("SELECT COUNT(*) FROM ai_tags").fetchone()[0]
-            )
-            candidates = int(
-                connection.execute("SELECT COUNT(*) FROM candidates").fetchone()[0]
-            )
-        return StoreCounts(
-            phase=str(meta[3]),
-            cursor=int(meta[5]),
-            ai_tags=ai_tags,
-            candidates=candidates,
-            pending=int(states.get("pending", 0)),
-            delivered=int(states.get("delivered", 0)),
-            dead=int(states.get("dead", 0)),
-            last_delivery_at=last_delivery_at,
-        )
+            return _store_counts(connection, str(meta[3]), int(meta[5]))
 
     def _reduce_tag(self, connection: sqlite3.Connection, event: HistoryEvent) -> None:
         if event.action == 2:
@@ -538,23 +519,7 @@ def read_routine_counts(path: Path, account_digest: str) -> StoreCounts | None:
             ).fetchone()
             if row is None or row[2] != account_digest:
                 return None
-            states = dict(
-                connection.execute("SELECT state, COUNT(*) FROM events GROUP BY state")
-            )
-            return StoreCounts(
-                phase=str(row[0]),
-                cursor=int(row[1]),
-                ai_tags=int(
-                    connection.execute("SELECT COUNT(*) FROM ai_tags").fetchone()[0]
-                ),
-                candidates=int(
-                    connection.execute("SELECT COUNT(*) FROM candidates").fetchone()[0]
-                ),
-                pending=int(states.get("pending", 0)),
-                delivered=int(states.get("delivered", 0)),
-                dead=int(states.get("dead", 0)),
-                last_delivery_at=_last_delivery_at(connection),
-            )
+            return _store_counts(connection, str(row[0]), int(row[1]))
     except sqlite3.Error:
         return None
 
@@ -577,6 +542,26 @@ def _is_task(entity: str) -> bool:
 
 def _is_tag(entity: str) -> bool:
     return entity in {"Tag", "Tag3", "Tag4"}
+
+
+def _store_counts(
+    connection: sqlite3.Connection, phase: str, cursor: int
+) -> StoreCounts:
+    states = dict(
+        connection.execute("SELECT state, COUNT(*) FROM events GROUP BY state")
+    )
+    return StoreCounts(
+        phase=phase,
+        cursor=cursor,
+        ai_tags=int(connection.execute("SELECT COUNT(*) FROM ai_tags").fetchone()[0]),
+        candidates=int(
+            connection.execute("SELECT COUNT(*) FROM candidates").fetchone()[0]
+        ),
+        pending=int(states.get("pending", 0)),
+        delivered=int(states.get("delivered", 0)),
+        dead=int(states.get("dead", 0)),
+        last_delivery_at=_last_delivery_at(connection),
+    )
 
 
 def _last_delivery_at(connection: sqlite3.Connection) -> int | None:
