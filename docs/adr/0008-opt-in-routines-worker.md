@@ -1,5 +1,9 @@
 # ADR 0008: Opt-in routines worker
 
+## Status
+
+Accepted.
+
 ## Caller contract
 
 ```text

@@ -9,6 +9,7 @@ import pytest
 
 from things_orchestrator.config import ConfigError
 from things_orchestrator.service import (
+    _SUPERVISED_HTTP_ARGV,
     ServiceApplyError,
     ServiceEffect,
     ServiceOperationResult,
@@ -32,7 +33,8 @@ def test_systemd_unit_binds_exact_executable_user_and_restart_policy() -> None:
     assert "Wants=network-online.target" in unit
     assert "User=mats" in unit
     assert (
-        'ExecStart="/opt/uv tools/bin/things-orchestrator" serve-http --port 8787'
+        'ExecStart="/opt/uv tools/bin/things-orchestrator" '
+        f"{' '.join(_SUPERVISED_HTTP_ARGV)}"
         in unit
     )
     assert "Restart=on-failure" in unit
@@ -59,6 +61,8 @@ def test_systemd_unit_preserves_only_nonempty_xdg_roots() -> None:
 
 def test_launchd_plist_binds_exact_executable_and_failure_restart() -> None:
     plist = render_launchd_plist(EXECUTABLE)
+    payload = plistlib.loads(plist.encode())
+    assert payload["ProgramArguments"] == [str(EXECUTABLE), *_SUPERVISED_HTTP_ARGV]
     assert "/opt/uv tools/bin/things-orchestrator" in plist
     assert "serve-http" in plist
     assert "8787" in plist
