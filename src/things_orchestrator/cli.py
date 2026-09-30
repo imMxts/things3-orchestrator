@@ -32,6 +32,7 @@ from .config import (
     Credentials,
     McpBearer,
     credentials_path,
+    is_loopback_http,
     launcher_path,
     load_credentials,
     load_legacy_mcp_url,
@@ -822,8 +823,16 @@ def _doctor(parser: argparse.ArgumentParser, *, wait: bool, public_url: str) -> 
         raise SystemExit(1)
     print(f"timezone: ok ({timezone_name})")
     stored_url = load_preferences(path=creds.with_name("preferences.json")).mcp_url
-    hosted = stored_url is not None and stored_url.origin != "http://127.0.0.1:8787"
-    if timezone_name == "UTC" and (public_url.strip() or hosted):
+    override = None
+    if public_url.strip():
+        try:
+            override = normalize_mcp_url(public_url)
+        except ConfigError:
+            override = None
+    hosted = (stored_url is not None and not is_loopback_http(stored_url)) or (
+        override is not None and not is_loopback_http(override)
+    )
+    if timezone_name == "UTC" and hosted:
         print("timezone: warning - UTC is unusual for a hosted owner account")
 
     try:
