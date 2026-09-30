@@ -9,12 +9,12 @@ import pytest
 
 from things_orchestrator.config import ConfigError
 from things_orchestrator.service import (
+    _SUPERVISED_HTTP_ARGV,
     ServiceApplyError,
     ServiceEffect,
     ServiceOperationResult,
     ServicePlan,
     ServiceStatus,
-    _SUPERVISED_HTTP_ARGV,
     _apply,
     _plan_service,
     diagnostic_service_status,
