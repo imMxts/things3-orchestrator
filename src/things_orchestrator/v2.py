@@ -1163,7 +1163,6 @@ class ThingsV2:
         self,
         result: Any,
         *,
-        items: list[Any] | None = None,
         route: str | None = None,
     ) -> PublicResult:
         ok = result.status == "ok"
@@ -1179,7 +1178,7 @@ class ThingsV2:
                 if cursor is not None
                 else "Current Things facts."
             ),
-            items=[self._item(item) for item in (result.items if items is None else items)],
+            items=[self._item(item) for item in result.items],
             cursor=cursor,
         )
 
