@@ -30,6 +30,11 @@ def test_acceptance_url_rejects_unsafe_or_ambiguous_targets(url: str) -> None:
         acceptance_urls(url)
 
 
+def test_acceptance_url_requires_https_for_remote_http() -> None:
+    with pytest.raises(ValueError, match="remote live acceptance requires HTTPS"):
+        acceptance_urls("http://example.com/mcp")
+
+
 @pytest.mark.parametrize(
     "url,mcp,health",
     [
@@ -47,6 +52,11 @@ def test_acceptance_url_rejects_unsafe_or_ambiguous_targets(url: str) -> None:
             "http://[::1]:8787/mcp",
             "http://[::1]:8787/mcp/",
             "http://[::1]:8787/health",
+        ),
+        (
+            "http://LocalHost:8787/mcp",
+            "http://LocalHost:8787/mcp/",
+            "http://LocalHost:8787/health",
         ),
         (
             "https://example.com/mcp",

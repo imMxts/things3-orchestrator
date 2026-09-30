@@ -979,6 +979,75 @@ def test_doctor_warns_for_utc_when_saved_endpoint_is_hosted(
     assert "UTC is unusual for a hosted owner account" in capsys.readouterr().out
 
 
+_LOOPBACK_MCP = (
+    "http://127.0.0.1:8787/mcp",
+    "http://localhost:8787/mcp",
+    "http://[::1]:8787/mcp",
+    "http://LocalHost:8787/mcp",
+)
+
+
+def _utc_doctor(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+    capsys: pytest.CaptureFixture[str],
+    args: list[str],
+    *,
+    url: str = "http://127.0.0.1:8787/mcp",
+) -> str:
+    creds = _seed_credentials(tmp_path, timezone="UTC")
+    _seed_preferences(tmp_path, url=url, timezone="UTC")
+    monkeypatch.setattr("things_orchestrator.cli.credentials_path", lambda: creds)
+    monkeypatch.setattr(
+        "things_orchestrator.cli.launcher_path", lambda: tmp_path / "state.json"
+    )
+
+    async def healthy(
+        targets: list[object], *_args: object, **_kwargs: object
+    ) -> object:
+        return _doctor_report(targets)
+
+    monkeypatch.setattr("things_orchestrator.cli.run_doctor", healthy)
+    main(["doctor", *args])
+    return capsys.readouterr().out
+
+
+@pytest.mark.parametrize("url", _LOOPBACK_MCP)
+def test_doctor_does_not_warn_utc_for_loopback_saved_endpoint(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+    capsys: pytest.CaptureFixture[str],
+    url: str,
+) -> None:
+    out = _utc_doctor(monkeypatch, tmp_path, capsys, [], url=url)
+    assert "UTC is unusual for a hosted owner account" not in out
+
+
+@pytest.mark.parametrize("override", _LOOPBACK_MCP)
+def test_doctor_does_not_warn_utc_for_loopback_url_override(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+    capsys: pytest.CaptureFixture[str],
+    override: str,
+) -> None:
+    out = _utc_doctor(monkeypatch, tmp_path, capsys, ["--url", override])
+    assert "UTC is unusual for a hosted owner account" not in out
+
+
+def test_doctor_warns_utc_for_hosted_url_override_when_saved_is_loopback(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    out = _utc_doctor(
+        monkeypatch,
+        tmp_path,
+        capsys,
+        ["--url", "https://tasks.example.com/mcp"],
+    )
+    assert "UTC is unusual for a hosted owner account" in out
+
+
 def test_service_install_dry_run_prints_effects_and_doctor_last(
     monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
 ) -> None:

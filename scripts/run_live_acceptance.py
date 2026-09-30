@@ -13,7 +13,12 @@ import httpx2
 from mcp import ClientSession
 from mcp.client.streamable_http import streamable_http_client
 
-from things_orchestrator.config import load_credentials
+from things_orchestrator.config import (
+    ConfigError,
+    is_loopback_http,
+    load_credentials,
+    normalize_mcp_url,
+)
 from things_orchestrator.deployment import package_version
 from things_orchestrator.live_acceptance import AcceptanceFailure, LiveAcceptanceRunner
 
@@ -44,16 +49,18 @@ def acceptance_urls(url: str) -> tuple[str, str]:
         or parsed.path != "/mcp"
     ):
         raise ValueError("URL needs one uncredentialed exact /mcp endpoint")
-    if parsed.scheme == "http" and parsed.hostname not in {
-        "127.0.0.1",
-        "localhost",
-        "::1",
-    }:
-        raise ValueError("remote live acceptance requires HTTPS")
     try:
         parsed.port
     except ValueError as error:
         raise ValueError("URL has an invalid port") from error
+    try:
+        mcp_url = normalize_mcp_url(url)
+    except ConfigError as error:
+        if parsed.scheme == "http":
+            raise ValueError("remote live acceptance requires HTTPS") from error
+        raise ValueError("URL needs one uncredentialed exact /mcp endpoint") from error
+    if parsed.scheme == "http" and not is_loopback_http(mcp_url):
+        raise ValueError("remote live acceptance requires HTTPS")
     mcp = parsed._replace(path="/mcp/")
     health = parsed._replace(path="/health")
     return urlunsplit(mcp), urlunsplit(health)

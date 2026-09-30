@@ -140,6 +140,16 @@ def _valid_network_host(host: str) -> bool:
     return True
 
 
+def is_loopback_http(url: McpUrl) -> bool:
+    parsed = urlsplit(url.origin)
+    host = parsed.hostname
+    return (
+        parsed.scheme == "http"
+        and host is not None
+        and host.casefold().removesuffix(".") in _LOOPBACK_HOSTS
+    )
+
+
 def load_credentials(*, path: Path | None = None) -> Credentials:
     target = path or credentials_path()
     try:
