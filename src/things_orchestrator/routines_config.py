@@ -408,5 +408,5 @@ def _bounded_int(value: object, lower: int, upper: int, label: str) -> int:
         or not isinstance(value, int)
         or not lower <= value <= upper
     ):
-        raise ConfigError(f"{label} must be between {lower} and {upper} seconds")
+        raise ConfigError(f"{label} must be between {lower} and {upper}")
     return value
