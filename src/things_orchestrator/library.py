@@ -43,10 +43,13 @@ def day_ts(day: date) -> int:
     return int(datetime.combine(day, time.min, tzinfo=timezone.utc).timestamp())
 
 
-def from_ts(value: int | float | None) -> date | None:
-    if value is None or value <= 0:
+def from_ts(value: object) -> date | None:
+    if isinstance(value, bool) or not isinstance(value, (int, float)):
         return None
-    return datetime.fromtimestamp(value, timezone.utc).date()
+    try:
+        return datetime.fromtimestamp(value, timezone.utc).date() if value > 0 else None
+    except (OverflowError, OSError, ValueError):
+        return None
 
 
 def remind_from_offset(seconds: int | None) -> str | None:

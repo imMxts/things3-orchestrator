@@ -143,15 +143,6 @@ def _note_text(value: object) -> str:
     return _apply_note(value, "") or ""
 
 
-def _native_date(value: object) -> date | None:
-    if isinstance(value, bool) or not isinstance(value, (int, float)):
-        return None
-    try:
-        return from_ts(value)
-    except (OverflowError, OSError, ValueError):
-        return None
-
-
 def _native_datetime(value: object) -> datetime | None:
     if isinstance(value, bool) or not isinstance(value, (int, float)):
         return None
@@ -726,11 +717,11 @@ def fold_events(events: list[dict[str, Any]], *, library: MemoryLibrary) -> None
         if "tr" in payload and payload["tr"] is not None:
             item.trashed = bool(payload["tr"])
         if "sr" in payload:
-            item.start = _native_date(payload.get("sr"))
+            item.start = from_ts(payload.get("sr"))
             if item.start is not None:
                 item.someday = False
         if "dd" in payload:
-            item.deadline = _native_date(payload.get("dd"))
+            item.deadline = from_ts(payload.get("dd"))
         if "ato" in payload:
             item.remind = _native_reminder(payload.get("ato"))
         if "sb" in payload and payload["sb"] is not None:
@@ -772,7 +763,7 @@ def fold_events(events: list[dict[str, Any]], *, library: MemoryLibrary) -> None
                 item.recurrence = item.recurrence.fold_paused(paused)
                 item.recurrence_paused_known = True
         if "icsd" in payload:
-            item.recurrence_created_through = _native_date(payload.get("icsd"))
+            item.recurrence_created_through = from_ts(payload.get("icsd"))
         if "icc" in payload:
             count = _native_count(payload.get("icc"))
             if count is None:
@@ -781,9 +772,9 @@ def fold_events(events: list[dict[str, Any]], *, library: MemoryLibrary) -> None
                 item.recurrence_instance_count = count
                 item.recurrence_instance_count_known = True
         if "acrd" in payload:
-            item.recurrence_completed_on = _native_date(payload.get("acrd"))
+            item.recurrence_completed_on = from_ts(payload.get("acrd"))
         if "tir" in payload and item.recurrence.role == "template":
-            item.recurrence_next_on = _native_date(payload.get("tir"))
+            item.recurrence_next_on = from_ts(payload.get("tir"))
         if "lt" in payload and isinstance(payload["lt"], bool):
             was_leavable = item.leavable
             item.leavable = payload["lt"]

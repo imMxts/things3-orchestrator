@@ -2493,81 +2493,79 @@ class ThingsWorkspace:
             )
         return values
 
+    def _recurrence_fact(
+        self, item: Record, *, linked_item_ids: list[str] | None = None
+    ) -> RecurrenceFact | None:
+        kind = self._recurrence_kind(item)
+        if kind == "none":
+            return None
+        rule = item.recurrence
+        bookkeeping = item
+        template_id: str | None = None
+        if item.recurrence.role == "instance":
+            template_record = self._library.records.get(
+                template_uuid_of(item) or ""
+            )
+            if template_record is not None and template_record.recurrence.rule:
+                rule = template_record.recurrence
+                bookkeeping = template_record
+                template_id = template_record.id
+        until = _repeat_end(rule)
+        return RecurrenceFact(
+            kind=kind,
+            template_id=template_id,
+            mode=(
+                cast(RepeatMode, rule.repeat_type)
+                if rule.repeat_type in {"fixed", "after_completion"}
+                else None
+            ),
+            unit=rule.unit,
+            interval=rule.interval,
+            weekdays=[
+                cast(Weekday, _WEEKDAY_NAMES[code])
+                for code in rule.weekday_codes
+                if code in _WEEKDAY_NAMES
+            ],
+            linked_item_ids=(linked_item_ids or [])[:40],
+            paused=(
+                rule.paused if bookkeeping.recurrence_paused_known else None
+            ),
+            created_through=(
+                bookkeeping.recurrence_created_through.isoformat()
+                if bookkeeping.recurrence_created_through
+                else None
+            ),
+            generated_count=(
+                bookkeeping.recurrence_instance_count
+                if bookkeeping.recurrence_instance_count_known
+                else None
+            ),
+            completed_on=(
+                bookkeeping.recurrence_completed_on.isoformat()
+                if bookkeeping.recurrence_completed_on
+                else None
+            ),
+            next_on=(
+                bookkeeping.recurrence_next_on.isoformat()
+                if bookkeeping.recurrence_next_on
+                else None
+            ),
+            on=_public_repeat_on(rule),
+            until=until,
+        )
+
     def _v2_recurrence_value(
         self, recurrence: RecurrenceState, *, item: Record | None = None
     ) -> JsonDict | None:
-        if recurrence.role == "none":
-            return None
-        resolved = recurrence
-        bookkeeping = item
-        template_kind: PublicKind = item.public_kind if item is not None else "task"
-        if recurrence.role == "instance" and recurrence.template_uuid is not None:
-            template = self._library.records.get(recurrence.template_uuid)
-            if template is not None and template.recurrence.role == "template":
-                resolved = template.recurrence
-                bookkeeping = template
-                template_kind = template.public_kind
-        kind = (
-            "template"
-            if recurrence.role == "template"
-            else "fixed_instance"
-            if resolved.repeat_type == "fixed"
-            else "after_completion_instance"
-            if resolved.repeat_type == "after_completion"
-            else "unknown"
+        source = (
+            replace(item, recurrence=recurrence)
+            if item is not None
+            else Record(uuid="", kind="task", title="", recurrence=recurrence)
         )
-        until = _repeat_end(resolved)
-        return {
-            "kind": kind,
-            "template_id": (
-                f"{template_kind}:{recurrence.template_uuid}"
-                if recurrence.template_uuid is not None
-                else None
-            ),
-            "mode": (
-                resolved.repeat_type
-                if resolved.repeat_type in {"fixed", "after_completion"}
-                else None
-            ),
-            "unit": resolved.unit,
-            "interval": resolved.interval,
-            "weekdays": [
-                _WEEKDAY_NAMES[code]
-                for code in resolved.weekday_codes
-                if code in _WEEKDAY_NAMES
-            ],
-            "paused": (
-                resolved.paused
-                if bookkeeping is not None and bookkeeping.recurrence_paused_known
-                else None
-            ),
-            "created_through": (
-                bookkeeping.recurrence_created_through.isoformat()
-                if bookkeeping is not None
-                and bookkeeping.recurrence_created_through is not None
-                else None
-            ),
-            "generated_count": (
-                bookkeeping.recurrence_instance_count
-                if bookkeeping is not None
-                and bookkeeping.recurrence_instance_count_known
-                else None
-            ),
-            "completed_on": (
-                bookkeeping.recurrence_completed_on.isoformat()
-                if bookkeeping is not None
-                and bookkeeping.recurrence_completed_on is not None
-                else None
-            ),
-            "next_on": (
-                bookkeeping.recurrence_next_on.isoformat()
-                if bookkeeping is not None
-                and bookkeeping.recurrence_next_on is not None
-                else None
-            ),
-            "on": [value.model_dump() for value in _public_repeat_on(resolved)],
-            "until": until,
-        }
+        fact = self._recurrence_fact(source)
+        if fact is None:
+            return None
+        return fact.model_dump(exclude={"linked_item_ids"})
 
     def _view_items(self, view: View) -> list[Record]:
         today = self._clock().date()
@@ -3225,62 +3223,10 @@ class ThingsWorkspace:
             if len(compact_direct_tag_ids) > 40:
                 compact_direct_tag_ids = compact_direct_tag_ids[:40]
                 tags_truncated = True
-        recurrence_kind = self._recurrence_kind(item)
         recurrence = _rt2_fact(item)
-        if recurrence is None and recurrence_kind != "none":
-            rule = item.recurrence
-            bookkeeping = item
-            template_id: str | None = None
-            if item.recurrence.role == "instance":
-                template_record = self._library.records.get(
-                    template_uuid_of(item) or ""
-                )
-                if template_record is not None and template_record.recurrence.rule:
-                    rule = template_record.recurrence
-                    bookkeeping = template_record
-                    template_id = template_record.id
-            until = _repeat_end(rule)
-            recurrence = RecurrenceFact(
-                kind=recurrence_kind,
-                template_id=template_id,
-                mode=(
-                    cast(RepeatMode, rule.repeat_type)
-                    if rule.repeat_type in {"fixed", "after_completion"}
-                    else None
-                ),
-                unit=rule.unit,
-                interval=rule.interval,
-                weekdays=[
-                    cast(Weekday, _WEEKDAY_NAMES[code])
-                    for code in rule.weekday_codes
-                    if code in _WEEKDAY_NAMES
-                ],
-                linked_item_ids=linked_ids[:40],
-                paused=(
-                    rule.paused if bookkeeping.recurrence_paused_known else None
-                ),
-                created_through=(
-                    bookkeeping.recurrence_created_through.isoformat()
-                    if bookkeeping.recurrence_created_through
-                    else None
-                ),
-                generated_count=(
-                    bookkeeping.recurrence_instance_count
-                    if bookkeeping.recurrence_instance_count_known
-                    else None
-                ),
-                completed_on=(
-                    bookkeeping.recurrence_completed_on.isoformat()
-                    if bookkeeping.recurrence_completed_on
-                    else None
-                ),
-                next_on=(
-                    bookkeeping.recurrence_next_on.isoformat()
-                    if bookkeeping.recurrence_next_on
-                    else None
-                ),
-                on=_public_repeat_on(rule),
-                until=until,
+        if recurrence is None:
+            recurrence = self._recurrence_fact(
+                item, linked_item_ids=linked_ids[:40]
             )
         into_id = (
             f"project:{item.parent_uuid}"
