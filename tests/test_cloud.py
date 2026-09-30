@@ -10,7 +10,7 @@ from urllib.error import HTTPError
 import pytest
 
 from things_orchestrator.cloud import (
-    _CACHE_VERSION,
+    CACHE_VERSION,
     CloudClient,
     CloudError,
     CloudLibrary,
@@ -1260,7 +1260,7 @@ def test_previous_cache_version_replays_task7_from_zero(tmp_path: Path) -> None:
     cache.write_text(
         json.dumps(
             {
-                "version": _CACHE_VERSION - 1,
+                "version": CACHE_VERSION - 1,
                 "history_id": "hist",
                 "loaded_index": 9,
                 "server_index": 9,
@@ -1373,7 +1373,7 @@ def test_malformed_cached_recurrence_is_discarded_before_replay(
     cache.write_text(
         json.dumps(
             {
-                "version": _CACHE_VERSION,
+                "version": CACHE_VERSION,
                 "history_id": "hist",
                 "loaded_index": 9,
                 "server_index": 9,

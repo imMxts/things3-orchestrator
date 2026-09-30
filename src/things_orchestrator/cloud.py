@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import json
-import os
 import re
 import time
 import zlib
@@ -20,7 +19,7 @@ from urllib.error import HTTPError, URLError
 from urllib.parse import quote, urlencode
 from urllib.request import Request, urlopen
 
-from .config import _atomic_write
+from .config import _atomic_write, _state_dir
 from .library import (
     MAX_RECURRENCE_INSTANCE_COUNT,
     ApplyResult,
@@ -65,7 +64,7 @@ _TASK_KINDS = {"Task7", "Task6", "Task4", "Task3", "Task"}
 _AREA_KINDS = {"Area3", "Area2", "Area"}
 _TAG_KINDS = {"Tag4", "Tag3", "Tag"}
 _CHECKLIST_KINDS = {"ChecklistItem3", "ChecklistItem2", "ChecklistItem"}
-_CACHE_VERSION = 11
+CACHE_VERSION = 11
 
 
 class CloudError(RuntimeError):
@@ -925,7 +924,7 @@ class CloudLibrary(MemoryLibrary):
     def apply(self, writes: list[Write]) -> ApplyResult:
         self._pull(force=False)
         try:
-            envelopes, _ = self._plan(writes)
+            envelopes = self._plan(writes)
             self.client.commit(envelopes)
         except CloudWriteRejected as error:
             try:
@@ -960,7 +959,7 @@ class CloudLibrary(MemoryLibrary):
         if not envelope_writes:
             return True
         try:
-            envelopes, _ = self._plan(envelope_writes)
+            envelopes = self._plan(envelope_writes)
         except CloudError:
             return False
         dynamic_indexes = {
@@ -984,7 +983,7 @@ class CloudLibrary(MemoryLibrary):
                 return False
         return True
 
-    def _plan(self, writes: list[Write]) -> tuple[list[Envelope], dict[str, str]]:
+    def _plan(self, writes: list[Write]) -> list[Envelope]:
         return _CloudPlanHandler(self).plan(writes)
 
     def _envelope(self, write: Write) -> Envelope:
@@ -1065,7 +1064,7 @@ class CloudLibrary(MemoryLibrary):
         except (OSError, json.JSONDecodeError):
             return False
         if (
-            payload.get("version") != _CACHE_VERSION
+            payload.get("version") != CACHE_VERSION
             or payload.get("history_id") != history_id
         ):
             return False
@@ -1108,7 +1107,7 @@ class CloudLibrary(MemoryLibrary):
 
     def _save_cache(self) -> None:
         payload = {
-            "version": _CACHE_VERSION,
+            "version": CACHE_VERSION,
             "history_id": self.client.history_id,
             "loaded_index": self.client.loaded_index,
             "server_index": self.client.server_index,
@@ -1207,14 +1206,13 @@ class _CloudPlanHandler(_MutationHandler[None]):
         self.library = library
         self.tag_map: dict[str, str] = {}
         self.envelopes: list[Envelope] = []
-        self.created: dict[str, str] = {}
         self.created_ix: dict[tuple[str, str | None, str | None], int] = {}
         self.created_kinds: dict[str, Kind] = {}
         self.created_headings: dict[str, str | None] = {}
         self.project_heading_moves: dict[str, str] = {}
         self.deleted_tags: set[str] = set()
 
-    def plan(self, writes: list[Write]) -> tuple[list[Envelope], dict[str, str]]:
+    def plan(self, writes: list[Write]) -> list[Envelope]:
         self.created_kinds = {
             item.uuid: item.kind
             for item in writes
@@ -1246,7 +1244,7 @@ class _CloudPlanHandler(_MutationHandler[None]):
         uuids = [item.uuid for item in envelopes]
         if len(uuids) != len(set(uuids)):
             raise CloudError("planned envelope UUIDs must be unique")
-        return envelopes, self.created
+        return envelopes
 
     def _prepare(self, mutation: _Mutation) -> _Mutation:
         write = mutation.write
@@ -1323,8 +1321,6 @@ class _CloudPlanHandler(_MutationHandler[None]):
             self.created_ix[key] = index
             write = replace(write, sort_index=index)
         self._emit(write)
-        if write.title:
-            self.created[write.title] = f"{write.kind}:{write.uuid}"
 
     def edit(self, mutation: _EditMutation) -> None:
         self._emit(self._normalize_item_tags(mutation.write))
@@ -1359,7 +1355,6 @@ class _CloudPlanHandler(_MutationHandler[None]):
                     )
                 )
                 self.tag_map[write.uuid] = write.uuid
-                self.created[title or write.uuid] = write.uuid
             else:
                 self.tag_map[write.uuid] = existing
                 if write.tag_parent_uuids is not None:
@@ -1371,7 +1366,6 @@ class _CloudPlanHandler(_MutationHandler[None]):
                             payload={"pn": parents, "md": _now()},
                         )
                     )
-                self.created[title or existing] = existing
             return
         write = replace(
             write,
@@ -1858,9 +1852,7 @@ def _create_payload(write: Write) -> dict[str, Any]:
 
 
 def state_cache_path() -> Path:
-    root = os.environ.get("XDG_STATE_HOME")
-    base = Path(root) if root else Path.home() / ".local" / "state"
-    return base / "things-orchestrator" / "state.json"
+    return _state_dir() / "state.json"
 
 
 def _record_to_json(item: Record) -> dict[str, Any]:

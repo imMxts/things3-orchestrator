@@ -129,12 +129,12 @@ def skill_path() -> Path:
 def health_payload(*, authenticated: bool = False) -> dict[str, object]:
     if not authenticated:
         return {"ok": True}
-    from .cloud import _CACHE_VERSION
+    from .cloud import CACHE_VERSION
 
     payload: dict[str, object] = {
         "ok": True,
         "version": package_version(),
-        "cache_version": _CACHE_VERSION,
+        "cache_version": CACHE_VERSION,
         "tool_schema_hash": tool_schema_hash(),
         "tool_contract_hash": tool_contract_hash(),
         "tool_discovery_hash": tool_discovery_hash(),
