@@ -15,12 +15,8 @@ from pathlib import Path
 from secrets import token_bytes
 from typing import cast
 
-from .cloud import (
-    HistoryBatch,
-    HistoryEvent,
-    _TAG_KINDS as _TAG_ENTITIES,
-    _TASK_KINDS as _TASK_ENTITIES,
-)
+from . import cloud
+from .cloud import HistoryBatch, HistoryEvent
 from .routines_config import (
     ROUTINE_EVENT_TYPE,
     ROUTINE_TRIGGER_TAG,
@@ -577,11 +573,11 @@ def _lifecycle(value: object) -> str:
 
 
 def _is_task(entity: str) -> bool:
-    return entity in _TASK_ENTITIES
+    return entity in cloud._TASK_KINDS
 
 
 def _is_tag(entity: str) -> bool:
-    return entity in _TAG_ENTITIES
+    return entity in cloud._TAG_KINDS
 
 
 def _count(connection: sqlite3.Connection, table: str) -> int:
