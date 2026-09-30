@@ -15,7 +15,12 @@ from pathlib import Path
 from secrets import token_bytes
 from typing import cast
 
-from .cloud import HistoryBatch, HistoryEvent
+from .cloud import (
+    HistoryBatch,
+    HistoryEvent,
+    _TAG_KINDS as _TAG_ENTITIES,
+    _TASK_KINDS as _TASK_ENTITIES,
+)
 from .routines_config import (
     ROUTINE_EVENT_TYPE,
     ROUTINE_TRIGGER_TAG,
@@ -201,12 +206,7 @@ class RoutineStore:
     def cursor(self) -> int:
         self._require_open()
         with closing(self._connect()) as connection, connection:
-            self._verify_account(connection)
-            row = connection.execute(
-                "SELECT cursor FROM meta WHERE singleton = 1"
-            ).fetchone()
-            assert row is not None
-            return int(row[0])
+            return self._meta(connection)[5]
 
     def apply_batch(self, batch: HistoryBatch, *, observed_at: int) -> None:
         self._require_open()
@@ -377,7 +377,6 @@ class RoutineStore:
                     observed_at + self.profile.settle_seconds,
                 ),
             )
-            exists = True
         elif not exists:
             return
         else:
@@ -400,7 +399,7 @@ class RoutineStore:
                 f"UPDATE candidates SET {', '.join(assignments)} WHERE task_uuid = ?",
                 values,
             )
-        if exists and "tg" in event.payload:
+        if "tg" in event.payload:
             connection.execute(
                 "DELETE FROM candidate_tags WHERE task_uuid = ?", (event.uuid,)
             )
@@ -578,11 +577,11 @@ def _lifecycle(value: object) -> str:
 
 
 def _is_task(entity: str) -> bool:
-    return entity in {"Task", "Task3", "Task4", "Task6", "Task7"}
+    return entity in _TASK_ENTITIES
 
 
 def _is_tag(entity: str) -> bool:
-    return entity in {"Tag", "Tag3", "Tag4"}
+    return entity in _TAG_ENTITIES
 
 
 def _count(connection: sqlite3.Connection, table: str) -> int:
