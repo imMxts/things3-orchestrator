@@ -538,12 +538,13 @@ def _routines_command(
             enabled = set_routines_enabled(True, email=credentials.email)
             try:
                 service = service_action("install", dry_run=False)
-            except (ConfigError, OSError, ServiceApplyError):
+            except (ConfigError, OSError, ServiceApplyError) as error:
                 parser.error(
                     "Routines are enabled, but the supervised service install failed. "
                     "Fix the service problem, then run "
                     "`things-orchestrator service install`. The saved receiver "
-                    "values do not need to be entered again."
+                    "values do not need to be entered again. "
+                    f"{error}"
                 )
             print(
                 json.dumps(

@@ -100,7 +100,8 @@ definitive rejection without a commit. Do not replay the old write after a
 pull. Use the configured owner
 timezone for Today, Logbook, and reminder dates.
 
-Keep routines outside the MCP tool contract. Disabled or ineligible HTTP paths
+Keep routines outside the MCP tool contract
+([ADR 0008](adr/0008-opt-in-routines-worker.md)). Disabled or ineligible HTTP paths
 must not construct a routine client, store, lock, or background task. A cold
 baseline validates all history but reduces only exact-`AI` tag UUIDs before the
 fixed baseline head. Live candidates retain only kind, lifecycle, trash state,

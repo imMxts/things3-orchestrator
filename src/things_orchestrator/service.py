@@ -20,6 +20,7 @@ from .config import ConfigError
 
 _LABEL = "com.matsvarnskuhler.things-orchestrator-http"
 _UNIT = "things-orchestrator-http.service"
+_SUPERVISED_HTTP_ARGV = ("serve-http", "--port", "8787", "--service-managed")
 _SYSTEMD_PATH = Path("/etc/systemd/system") / _UNIT
 _DEPLOYMENT_UNIT = "things-orchestrator.service"
 _DEPLOYMENT_SYSTEMD_PATH = Path("/etc/systemd/system") / _DEPLOYMENT_UNIT
@@ -87,7 +88,7 @@ def render_systemd_unit(
         "Type=simple\n"
         f"User={user}\n"
         f"{environment_lines}"
-        f"ExecStart={_systemd_quote(executable)} serve-http --port 8787 --service-managed\n"
+        f"ExecStart={_systemd_quote(executable)} {' '.join(_SUPERVISED_HTTP_ARGV)}\n"
         "Restart=on-failure\n"
         "RestartSec=2\n"
         "\n"
@@ -103,13 +104,7 @@ def render_launchd_plist(
 ) -> str:
     payload: dict[str, object] = {
         "Label": _LABEL,
-        "ProgramArguments": [
-            str(executable),
-            "serve-http",
-            "--port",
-            "8787",
-            "--service-managed",
-        ],
+        "ProgramArguments": [str(executable), *_SUPERVISED_HTTP_ARGV],
         "RunAtLoad": True,
         "KeepAlive": {"SuccessfulExit": False},
         "ProcessType": "Background",

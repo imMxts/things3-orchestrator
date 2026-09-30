@@ -577,7 +577,7 @@ def test_routines_setup_service_failure_leaves_enabled_for_direct_service_recove
     assert caught.value.code == 2
     assert load_routines_config().state == "enabled"
     failure = capsys.readouterr()
-    assert "private service detail" not in failure.err
+    assert "private service detail" in failure.err
     assert "things-orchestrator service install" in failure.err
     assert "saved receiver values do not need to be entered again" in failure.err
     assert "rerun this setup command" not in failure.err

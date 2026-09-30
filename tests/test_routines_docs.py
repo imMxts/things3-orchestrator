@@ -190,6 +190,10 @@ def test_maintainer_docs_describe_endpoint_free_status_and_current_proof_gates()
     maintainer = (ROOT / "docs/maintainer.md").read_text()
     capability = (ROOT / "docs/capability-proof.md").read_text()
 
+    assert "## Status" in adr
+    assert "Accepted." in adr
+    assert "adr/0008-opt-in-routines-worker.md" in maintainer
+
     for text in (adr, maintainer):
         assert "endpoint-free, value-free" in text
         assert "receiver kind only" in text
