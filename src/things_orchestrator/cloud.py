@@ -261,10 +261,9 @@ def _thaw_mapping(value: Mapping[str, object]) -> dict[str, Any]:
 
 def _page_size(value: object) -> int:
     """Library pagination sizes; malformed values stay 0 so routines still decode."""
-    try:
-        return int(value or 0)
-    except (TypeError, ValueError):
+    if isinstance(value, bool) or not isinstance(value, int) or value < 0:
         return 0
+    return value
 
 
 def _validate_grouped_payload(entity: str, payload: dict[str, Any]) -> None:
