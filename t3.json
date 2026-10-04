@@ -1,0 +1,20 @@
+{
+  "$schema": "https://t3.codes/schema/t3.json",
+  "defaultThreadEnvMode": "worktree",
+  "scripts": [
+    {
+      "name": "Setup",
+      "command": "bash scripts/setup.sh",
+      "icon": "configure",
+      "runOnWorktreeCreate": true,
+      "async": false
+    },
+    {
+      "name": "Check",
+      "command": "uv run --locked pytest && uv run --locked mypy --strict src && MYPYPATH=src uv run --locked mypy --strict tests/test_diagnostics.py tests/test_routines_config.py tests/test_routines_grok.py tests/test_routines_history.py tests/test_routines_runtime.py tests/test_routines_store.py tests/test_routines_webhook.py && uv run --locked ruff check . && uv run --locked python scripts/check_release.py metadata && uv run --locked python scripts/check_release.py links && uv run --locked python scripts/check_release.py instructions && uv build && uv run --locked python scripts/check_release.py archives && uv run --locked python scripts/check_release.py bundle",
+      "icon": "test",
+      "runOnWorktreeCreate": false,
+      "async": false
+    }
+  ]
+}
