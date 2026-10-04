@@ -2,6 +2,7 @@
 .github/workflows/ci.yml
 .gitignore
 .python-version
+AGENTS.md
 CHANGELOG.md
 LICENSE
 PRODUCT.md
@@ -49,6 +50,7 @@ pyproject.toml
 scripts/check_release.py
 scripts/probe_cloud_capabilities.py
 scripts/run_live_acceptance.py
+scripts/setup.sh
 src/things_orchestrator/__init__.py
 src/things_orchestrator/cli.py
 src/things_orchestrator/client_bundle.py
@@ -86,6 +88,7 @@ src/things_orchestrator/skills/things-orchestrator/references/routines.md
 src/things_orchestrator/tools.py
 src/things_orchestrator/v2.py
 src/things_orchestrator/workspace.py
+t3.json
 tests/__init__.py
 tests/fixtures/full_reorg_owner_prompt.txt
 tests/fixtures/mats_mode_owner_prompt.txt
