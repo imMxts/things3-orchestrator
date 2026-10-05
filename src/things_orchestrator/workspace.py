@@ -60,6 +60,7 @@ from .library import (
     new_uuid,
     parse_id,
     public_id,
+    remind_from_offset,
     template_uuid_of,
 )
 from .recurrence import RecurrenceReadError, RecurrenceState, RepeatMode, new_rule
@@ -278,14 +279,13 @@ def _rt2_fact(item: Record) -> RecurrenceFact | None:
                 semantic_on.append(fact)
     until = _repeat_timestamp_date(raw.get("ead"))
     alarm = raw.get("aa")
-    reminder_time = None
-    if (
-        isinstance(alarm, int)
+    reminder_time = (
+        remind_from_offset(alarm)
+        if isinstance(alarm, int)
         and not isinstance(alarm, bool)
         and 0 <= alarm < 86_400
-    ):
-        hours, remainder = divmod(alarm, 3_600)
-        reminder_time = f"{hours:02d}:{remainder // 60:02d}"
+        else None
+    )
     return RecurrenceFact(
         kind=(
             "template"
@@ -526,13 +526,9 @@ class ThingsWorkspace:
         )
 
     def _registry_items(self, kind: Literal["project", "area"]) -> list[Record]:
-        if kind == "project":
-            return [
-                item
-                for item in self._library.audit()
-                if item.public_kind == "project"
-            ]
-        return list(self._library.areas())
+        return list(
+            self._library.projects() if kind == "project" else self._library.areas()
+        )
 
     def _bulk_exact(self, call: ReadCall) -> Result:
         items: list[Record] = []
@@ -2340,7 +2336,7 @@ class ThingsWorkspace:
             )
         if "remind_at" in selected:
             desired["remind_at"] = (
-                None if write.clear_remind else self._reminder_from_write(write)
+                None if write.clear_remind else self._reminder(write.start, write.remind)
             )
         if "into" in selected:
             desired["into_id"] = (
@@ -2450,11 +2446,6 @@ class ThingsWorkspace:
             return "someday"
         return write.start.isoformat() if write.start is not None else None
 
-    def _reminder_from_write(self, write: Write) -> str | None:
-        if write.remind is None or write.start is None:
-            return None
-        return datetime.combine(write.start, time.fromisoformat(write.remind), tzinfo=self._clock().tzinfo).isoformat()
-
     def _v2_observed(self, item: Record, fields: Sequence[str]) -> JsonDict:
         values: JsonDict = {"id": item.id}
         selected = set(fields) or {"title", "notes", "status", "trashed", "start", "deadline", "into"}
@@ -2471,7 +2462,7 @@ class ThingsWorkspace:
         if "deadline" in selected:
             values["deadline"] = item.deadline.isoformat() if item.deadline else None
         if "remind_at" in selected:
-            values["remind_at"] = self._reminder(item)
+            values["remind_at"] = self._reminder(item.start, item.remind)
         if "into" in selected:
             values["into_id"] = (
                 f"project:{item.parent_uuid}"
@@ -3266,7 +3257,7 @@ class ThingsWorkspace:
             if item.start
             else None,
             deadline=item.deadline.isoformat() if item.deadline else None,
-            remind_at=self._reminder(item),
+            remind_at=self._reminder(item.start, item.remind),
             recurrence=recurrence,
             order=_bounded_order(item.sort_index) if full else None,
             today_order=(
@@ -3396,15 +3387,13 @@ class ThingsWorkspace:
             *extras,
         )
 
-    def _reminder(self, item: Record) -> str | None:
-        if item.remind is None or item.start is None:
+    def _reminder(self, start: date | None, clock: str | None) -> str | None:
+        if start is None or clock is None:
             return None
         try:
-            hour_text, minute_text = item.remind.split(":", 1)
-            hour, minute = int(hour_text), int(minute_text)
-            tz = self._clock().tzinfo
+            hour_text, minute_text = clock.split(":", 1)
             return datetime.combine(
-                item.start, time(hour, minute), tzinfo=tz
+                start, time(int(hour_text), int(minute_text)), tzinfo=self._clock().tzinfo
             ).isoformat()
         except (TypeError, ValueError):
             return None

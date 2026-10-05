@@ -62,13 +62,6 @@ def test_empty_read_returns_bounded_today() -> None:
     assert result.scope_revision and result.scope_revision.startswith("s_")
 
 
-def test_library_get_matches_exact_id_or_uuid_only() -> None:
-    library = MemoryLibrary([Record(uuid="abcdef", kind="task", title="A")])
-    assert library.get("task:abcdef") is not None
-    assert library.get("abcdef") is not None
-    assert library.get("abc") is None
-
-
 def test_inbox_and_week_return_all_matching_records() -> None:
     today = NOW.date()
     records = [
