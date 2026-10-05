@@ -13,7 +13,15 @@ from typing import Annotated, Any, Literal, Self, cast
 from pydantic import BaseModel, Field, field_validator, model_validator
 from pydantic.json_schema import SkipJsonSchema
 
-from .interface import ITEM_ID, ReadCall, StrictModel, TruncatedField, Weekday
+from .interface import (
+    ITEM_ID as ITEM_ID,
+)
+from .interface import (
+    ReadCall,
+    StrictModel,
+    TruncatedField,
+    Weekday,
+)
 from .journal import AmbiguousV2Request, same_account_id
 
 API_VERSION = "2"
