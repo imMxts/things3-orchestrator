@@ -42,7 +42,7 @@ from .routines_config import (
 )
 from .routines_store import read_routine_counts, routine_database_path
 from .routines_webhook import RoutineHTTPOpener, proxyless_no_redirect_opener
-from .service import diagnostic_service_status
+from .service import _supported_platform, diagnostic_service_status
 from .tools import tool_contract_hash, tool_discovery_hash, tool_schema_hash
 
 CloudStatus = Literal[
@@ -249,13 +249,7 @@ def build_support_report(
 
 
 def collect_cloud_check() -> CloudCheck:
-    try:
-        credentials = _credentials()
-    except ConfigError:
-        return CloudCheck("credentials_unreadable")
-    if credentials is None:
-        return CloudCheck("not_configured")
-    return _fresh_cloud_check(credentials)
+    return _checked_credentials()[1]
 
 
 def collect_service_state() -> RoutineServiceState:
@@ -374,17 +368,7 @@ def collect_routines_diagnostic(
 
 def collect_support_report() -> SupportReport:
     credentials_file = credentials_path()
-    try:
-        credentials = _credentials(path=credentials_file)
-    except ConfigError:
-        credentials = None
-        cloud = CloudCheck("credentials_unreadable")
-    else:
-        cloud = (
-            CloudCheck("not_configured")
-            if credentials is None
-            else _fresh_cloud_check(credentials)
-        )
+    credentials, cloud = _checked_credentials(path=credentials_file)
     endpoint = _endpoint_class(credentials_file)
     operations = _operation_counts(credentials)
     service = _service_status()
@@ -431,6 +415,18 @@ def _credentials(*, path: Path | None = None) -> Credentials | None:
     return load_credentials(path=target)
 
 
+def _checked_credentials(
+    *, path: Path | None = None
+) -> tuple[Credentials | None, CloudCheck]:
+    try:
+        credentials = _credentials(path=path)
+    except ConfigError:
+        return None, CloudCheck("credentials_unreadable")
+    if credentials is None:
+        return None, CloudCheck("not_configured")
+    return credentials, _fresh_cloud_check(credentials)
+
+
 def _endpoint_class(credentials_file: Path) -> EndpointClass | None:
     try:
         endpoint = load_preferences(
@@ -456,12 +452,8 @@ def _operation_counts(
 
 
 def _service_status() -> str | None:
-    service_platform: Literal["darwin", "linux"]
-    if sys.platform == "darwin":
-        service_platform = "darwin"
-    elif sys.platform.startswith("linux"):
-        service_platform = "linux"
-    else:
+    service_platform = _supported_platform()
+    if service_platform is None:
         return None
     try:
         return diagnostic_service_status(

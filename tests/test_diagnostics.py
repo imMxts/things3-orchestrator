@@ -143,7 +143,9 @@ def test_collected_cloud_check_uses_and_removes_a_fresh_cache(
     monkeypatch.setattr(
         diagnostics,
         "_credentials",
-        lambda: Credentials("private@example.com", "private-password", None),
+        lambda *, path: Path | None = None: Credentials(
+            "private@example.com", "private-password", None
+        ),
     )
 
     assert diagnostics.collect_cloud_check().status == "ok"
@@ -253,6 +255,13 @@ def test_unreadable_credentials_have_a_fixed_value_free_diagnostic_status(
     assert "private@example.com" not in serialized
     assert "password" not in serialized
     assert str(credentials) not in serialized
+
+
+def test_collect_service_state_is_unsupported_without_a_host_platform(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setattr(diagnostics, "_supported_platform", lambda: None)
+    assert diagnostics.collect_service_state() == "unsupported"
 
 
 def test_support_report_serialization_is_value_free_and_deterministic(
