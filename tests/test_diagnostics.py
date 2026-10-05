@@ -140,13 +140,11 @@ def test_collected_cloud_check_uses_and_removes_a_fresh_cache(
 
     monkeypatch.setattr(diagnostics, "CloudClient", FakeClient)
     monkeypatch.setattr(diagnostics, "CloudLibrary", FakeLibrary)
-    monkeypatch.setattr(
-        diagnostics,
-        "_credentials",
-        lambda *, path: Path | None = None: Credentials(
-            "private@example.com", "private-password", None
-        ),
-    )
+    def fake_credentials(*, path: Path | None = None) -> Credentials:
+        del path
+        return Credentials("private@example.com", "private-password", None)
+
+    monkeypatch.setattr(diagnostics, "_credentials", fake_credentials)
 
     assert diagnostics.collect_cloud_check().status == "ok"
     assert len(observed_cache) == 1
