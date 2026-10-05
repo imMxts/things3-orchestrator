@@ -13,13 +13,13 @@ from mcp import ClientSession
 from mcp.client.streamable_http import streamable_http_client
 from mcp.types import Implementation, Tool
 
+from .client_bundle import CLIENT_BUNDLE_PATH
 from .config import McpBearer, McpUrl
 from .deployment import (
     DeploymentIdentity,
     installed_identity,
 )
 from .tools import (
-    CLIENT_BUNDLE_PATH,
     tool_contract_hash,
     tool_discovery_hash,
     tool_schema_hash,

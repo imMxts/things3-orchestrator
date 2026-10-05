@@ -12,7 +12,6 @@ from mcp.types import Tool
 from . import PACKAGE_NAME
 from .routines_config import ROUTINE_RECEIVER_INSTRUCTION
 from .tools import (
-    CLIENT_BUNDLE_FORMAT_VERSION,
     advertised_tool_payload,
     advertised_tools,
     content_sha256,
@@ -22,6 +21,8 @@ from .tools import (
     tool_schema_hash,
 )
 
+CLIENT_BUNDLE_FORMAT_VERSION = 1
+CLIENT_BUNDLE_PATH = "/client/bundle"
 RECEIVER_INSTRUCTION_PATH = "routines/receiver-instruction.txt"
 CATALOG_POLICY = "additive_output_v1"
 CATALOG_EPOCH = 1

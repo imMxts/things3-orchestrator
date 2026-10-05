@@ -8,11 +8,6 @@ from typing import Any, cast
 
 from mcp.types import Tool, ToolAnnotations
 
-ITEM_ID = r"^(task|project|area|heading):[^\s:]+$"
-
-CLIENT_BUNDLE_PATH = "/client/bundle"
-CLIENT_BUNDLE_FORMAT_VERSION = 1
-
 _READ_NAMES = frozenset(("things_view", "things_find", "things_get", "things_receipt"))
 _READ_ONLY = ToolAnnotations(
     read_only_hint=True,

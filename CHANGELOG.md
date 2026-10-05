@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+- Move `ITEM_ID` out of `tools.py` onto the client-safe ID patterns in
+  `interface.py`; `v2` imports it for public contracts. Client-bundle path
+  and format version live in `client_bundle.py`. `tools.py` still lazy-imports
+  `v2` so client-only startup does not load host modules.
 - Trim unpublished internal ReadCall language after the three-tool read
   surface retired: drop audit/system/project/area views, `signals_any`,
   logbook from/to, ReviewSection, and unused Result.receipt. Registries

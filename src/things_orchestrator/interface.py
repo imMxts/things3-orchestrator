@@ -8,8 +8,6 @@ from typing import Any, Literal, Self
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
-from .tools import ITEM_ID
-
 
 class StrictModel(BaseModel):
     """Reject values that are not part of the model interface."""
@@ -41,6 +39,7 @@ RecurrenceKind = Literal[
     "none", "fixed_instance", "after_completion_instance", "template", "unknown"
 ]
 
+ITEM_ID = r"^(task|project|area|heading):[^\s:]+$"
 _DIAGNOSTIC_ID = r"^(task|project|area|heading|tag):[^\s:]+$"
 _CONTAINER_ID = r"^(trash|(project|area):[^\s:]+)$"
 _CHECK_ID = r"^check:[^\s:]+$"

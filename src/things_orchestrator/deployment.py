@@ -12,8 +12,6 @@ from urllib.parse import unquote, urlsplit
 
 from . import PACKAGE_NAME
 from .tools import (
-    CLIENT_BUNDLE_FORMAT_VERSION,
-    CLIENT_BUNDLE_PATH,
     tool_contract_hash,
     tool_discovery_hash,
     tool_schema_hash,
@@ -129,6 +127,7 @@ def skill_path() -> Path:
 def health_payload(*, authenticated: bool = False) -> dict[str, object]:
     if not authenticated:
         return {"ok": True}
+    from .client_bundle import CLIENT_BUNDLE_FORMAT_VERSION, CLIENT_BUNDLE_PATH
     from .cloud import CACHE_VERSION
 
     payload: dict[str, object] = {
