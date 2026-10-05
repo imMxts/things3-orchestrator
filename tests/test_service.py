@@ -17,6 +17,8 @@ from things_orchestrator.service import (
     ServiceStatus,
     _apply,
     _plan_service,
+    _platform,
+    _supported_platform,
     diagnostic_service_status,
     render_launchd_plist,
     render_systemd_unit,
@@ -862,3 +864,31 @@ def test_linux_install_writes_reloads_and_starts_the_supervisor() -> None:
         "restart",
         "things-orchestrator-http.service",
     )
+
+
+@pytest.mark.parametrize(
+    ("sys_platform", "expected"),
+    (
+        ("darwin", "darwin"),
+        ("linux", "linux"),
+        ("linux2", "linux"),
+        ("win32", None),
+    ),
+)
+def test_supported_platform_detects_darwin_and_linux(
+    monkeypatch: pytest.MonkeyPatch,
+    sys_platform: str,
+    expected: Literal["darwin", "linux"] | None,
+) -> None:
+    monkeypatch.setattr("sys.platform", sys_platform)
+    assert _supported_platform() == expected
+
+
+def test_service_lifecycle_rejects_hosts_without_launchd_or_systemd(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setattr("sys.platform", "win32")
+    with pytest.raises(
+        ConfigError, match="service lifecycle supports macOS launchd and Linux systemd"
+    ):
+        _platform()

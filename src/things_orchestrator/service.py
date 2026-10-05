@@ -574,12 +574,19 @@ def _service_path(platform: Literal["darwin", "linux"], home: Path) -> Path:
     return _SYSTEMD_PATH
 
 
-def _platform() -> Literal["darwin", "linux"]:
+def _supported_platform() -> Literal["darwin", "linux"] | None:
     if sys.platform == "darwin":
         return "darwin"
     if sys.platform.startswith("linux"):
         return "linux"
-    raise ConfigError("service lifecycle supports macOS launchd and Linux systemd")
+    return None
+
+
+def _platform() -> Literal["darwin", "linux"]:
+    detected = _supported_platform()
+    if detected is None:
+        raise ConfigError("service lifecycle supports macOS launchd and Linux systemd")
+    return detected
 
 
 def _systemd_quote(path: Path) -> str:
