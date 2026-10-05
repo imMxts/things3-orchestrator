@@ -33,7 +33,6 @@ class Endpoint:
 
 @dataclass(frozen=True)
 class RenderedClientConfig:
-    client: ClientKind
     body: str
     guidance: str
     secondary_body: str | None = None
@@ -73,7 +72,6 @@ def render_client_config(
             )
         )
         return RenderedClientConfig(
-            client,
             f"{add_server}\n{install_skill}\n",
             "Run both commands one at a time. Hermes prompts for the MCP bearer "
             "privately and tests the MCP connection. The skill URL is pinned to "
@@ -89,7 +87,6 @@ def render_client_config(
                 "endpoints. Verify that the HTTPS endpoint is publicly reachable"
             )
         return RenderedClientConfig(
-            client,
             _http_json_body(endpoint.url, authorization),
             "At grok.com/connectors, choose New Connector, then Custom. "
             "xAI requires an HTTPS MCP URL that the public internet can reach. "
@@ -121,7 +118,6 @@ def render_client_config(
             indent=2,
         ) + "\n"
         return RenderedClientConfig(
-            client,
             _http_json_body(endpoint.url, authorization),
             "Prefer this native HTTPS MCP URL on the ephemeral agent host. "
             "Use the stdio mcp-remote recipe only if that host cannot speak "
@@ -140,7 +136,6 @@ def render_client_config(
             f"{json.dumps(authorization)} }}\n"
         )
         return RenderedClientConfig(
-            client,
             body,
             "Merge this block into ~/.codex/config.toml.",
         )
@@ -168,7 +163,6 @@ def render_client_config(
             indent=2,
         ) + "\n"
         return RenderedClientConfig(
-            client,
             command + "\n",
             "Run the command. For the alternative JSON block, run "
             "claude mcp add-json things '<JSON>', replacing <JSON> with that block.",
@@ -194,7 +188,7 @@ def render_client_config(
             )
         else:
             guidance = "Merge the things entry into ~/.cursor/mcp.json."
-        return RenderedClientConfig(client, body, guidance)
+        return RenderedClientConfig(body, guidance)
     if client is ClientKind.CADDY:
         if endpoint.url.origin.startswith("https://") is False:
             raise ConfigError("Caddy configuration needs an HTTPS MCP URL")
@@ -207,7 +201,6 @@ def render_client_config(
             "}\n"
         )
         return RenderedClientConfig(
-            client,
             body,
             "Install this as /etc/caddy/Caddyfile, then reload Caddy through systemd.",
         )
