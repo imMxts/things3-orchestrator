@@ -13,9 +13,9 @@ from mcp import ClientSession
 from mcp.client.streamable_http import streamable_http_client
 from mcp.types import Implementation, Tool
 
+from .client_bundle import CLIENT_BUNDLE_PATH
 from .config import McpBearer, McpUrl
 from .deployment import (
-    CLIENT_BUNDLE_PATH,
     DeploymentIdentity,
     installed_identity,
 )

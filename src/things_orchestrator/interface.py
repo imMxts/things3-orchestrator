@@ -39,7 +39,7 @@ RecurrenceKind = Literal[
     "none", "fixed_instance", "after_completion_instance", "template", "unknown"
 ]
 
-_ITEM_ID = r"^(task|project|area|heading):[^\s:]+$"
+ITEM_ID = r"^(task|project|area|heading):[^\s:]+$"
 _DIAGNOSTIC_ID = r"^(task|project|area|heading|tag):[^\s:]+$"
 _CONTAINER_ID = r"^(trash|(project|area):[^\s:]+)$"
 _CHECK_ID = r"^check:[^\s:]+$"
@@ -65,7 +65,7 @@ class ReadCall(StrictModel):
     )
 
     view: View | None = None
-    id: str | None = Field(default=None, pattern=_ITEM_ID, max_length=512)
+    id: str | None = Field(default=None, pattern=ITEM_ID, max_length=512)
     find: str | None = Field(default=None, min_length=1, max_length=500)
     within: str | None = Field(default=None, pattern=_CONTAINER_ID, max_length=512)
     cursor: str | None = Field(default=None, min_length=1, max_length=512)
@@ -75,7 +75,7 @@ class ReadCall(StrictModel):
     @field_validator("ids")
     @classmethod
     def valid_ids(cls, value: list[str]) -> list[str]:
-        if any(re.fullmatch(_ITEM_ID, item) is None for item in value):
+        if any(re.fullmatch(ITEM_ID, item) is None for item in value):
             raise ValueError("ids need exact item IDs")
         if _duplicates(value):
             raise ValueError("ids cannot contain duplicates")
@@ -124,7 +124,7 @@ class TagFact(StrictModel):
     title: str = Field(min_length=1, max_length=1000)
     parent_ids: list[str] = Field(default_factory=list, max_length=20)
     parents_truncated: bool = False
-    from_id: str | None = Field(default=None, pattern=_ITEM_ID, max_length=512)
+    from_id: str | None = Field(default=None, pattern=ITEM_ID, max_length=512)
 
     @field_validator("parent_ids")
     @classmethod
@@ -154,7 +154,7 @@ class RepeatOnFact(StrictModel):
 class RecurrenceFact(StrictModel):
     engine: Literal["rt1", "rt2"] = "rt1"
     kind: RecurrenceKind
-    template_id: str | None = Field(default=None, pattern=_ITEM_ID, max_length=512)
+    template_id: str | None = Field(default=None, pattern=ITEM_ID, max_length=512)
     mode: Literal["fixed", "after_completion"] | None = None
     unit: Literal["day", "week", "month", "year"] | None = None
     interval: int | None = Field(default=None, ge=1, le=366)
@@ -182,19 +182,19 @@ class RecurrenceFact(StrictModel):
     @classmethod
     def valid_linked_items(cls, value: list[str]) -> list[str]:
         if _duplicates(value) or any(
-            re.fullmatch(_ITEM_ID, item) is None for item in value
+            re.fullmatch(ITEM_ID, item) is None for item in value
         ):
             raise ValueError("linked_item_ids need unique exact item IDs")
         return value
 
 
 class ItemFact(StrictModel):
-    id: str = Field(pattern=_ITEM_ID, max_length=512)
+    id: str = Field(pattern=ITEM_ID, max_length=512)
     revision: str | None = Field(default=None, min_length=1, max_length=512)
     kind: Kind
     title: str = Field(min_length=1, max_length=1000)
     status: Status
-    into_id: str | None = Field(default=None, pattern=_ITEM_ID, max_length=512)
+    into_id: str | None = Field(default=None, pattern=ITEM_ID, max_length=512)
     into_title: str | None = Field(default=None, min_length=1, max_length=1000)
     heading_id: str | None = Field(default=None, pattern=_HEADING_ID, max_length=512)
     heading_title: str | None = Field(default=None, min_length=1, max_length=1000)

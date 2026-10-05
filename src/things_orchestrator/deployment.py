@@ -17,7 +17,6 @@ from .tools import (
     tool_schema_hash,
 )
 
-CLIENT_BUNDLE_PATH = "/client/bundle"
 _GIT_COMMIT = re.compile(r"[0-9a-fA-F]{40}|[0-9a-fA-F]{64}")
 CAPABILITIES = {
     "bounded_v2": True,
@@ -128,7 +127,7 @@ def skill_path() -> Path:
 def health_payload(*, authenticated: bool = False) -> dict[str, object]:
     if not authenticated:
         return {"ok": True}
-    from .client_bundle import CLIENT_BUNDLE_FORMAT_VERSION
+    from .client_bundle import CLIENT_BUNDLE_FORMAT_VERSION, CLIENT_BUNDLE_PATH
     from .cloud import CACHE_VERSION
 
     payload: dict[str, object] = {

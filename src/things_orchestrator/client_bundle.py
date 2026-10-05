@@ -22,6 +22,7 @@ from .tools import (
 )
 
 CLIENT_BUNDLE_FORMAT_VERSION = 1
+CLIENT_BUNDLE_PATH = "/client/bundle"
 RECEIVER_INSTRUCTION_PATH = "routines/receiver-instruction.txt"
 CATALOG_POLICY = "additive_output_v1"
 CATALOG_EPOCH = 1

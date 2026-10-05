@@ -23,6 +23,7 @@ from mcp.types import ListToolsResult, Tool
 from .client_bundle import (
     CATALOG_EPOCH,
     CATALOG_POLICY,
+    CLIENT_BUNDLE_PATH,
     MAX_BUNDLE_BYTES,
     RESERVED_PREFIX,
     BundleError,
@@ -31,14 +32,13 @@ from .client_bundle import (
     parse_client_bundle,
 )
 from .config import ConfigError, McpBearer, McpUrl, _atomic_replace, normalize_mcp_url
-from .deployment import CLIENT_BUNDLE_PATH
+from .interface import ITEM_ID
 from .tools import (
     advertised_tool_payload,
     content_sha256,
     hash_payload,
     tool_discovery_hash,
 )
-from .v2 import ITEM_ID
 
 MARKER_NAME = ".things-orchestrator-client.json"
 PENDING_NAME = ".things-orchestrator-client.pending.json"
