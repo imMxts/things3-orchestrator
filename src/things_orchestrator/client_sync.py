@@ -34,9 +34,7 @@ from .config import ConfigError, McpBearer, McpUrl, _atomic_replace, normalize_m
 from .tools import (
     CLIENT_BUNDLE_PATH,
     ITEM_ID,
-    advertised_tool_payload,
     content_sha256,
-    hash_payload,
     tool_discovery_hash,
 )
 
@@ -382,9 +380,7 @@ def classify_catalog_delta(
     live: tuple[Tool, ...],
     impact: Mapping[str, object],
 ) -> CatalogVerdict:
-    observed_hash = hash_payload(
-        [advertised_tool_payload(tool) for tool in observed]
-    )
+    observed_hash = tool_discovery_hash(observed)
     live_hash = tool_discovery_hash(live)
     if observed_hash == live_hash:
         return "match"
@@ -443,9 +439,7 @@ def _client_cache(
             ],
         )
     observed = load_observed_tools(observed_tools)
-    observed_hash = hash_payload(
-        [advertised_tool_payload(tool) for tool in observed]
-    )
+    observed_hash = tool_discovery_hash(observed)
     server_hash = tool_discovery_hash(server_tools)
     if observed_hash == server_hash:
         return (
