@@ -47,6 +47,7 @@ plugin/skills/things-orchestrator/references/routine-weekly-review.md
 plugin/skills/things-orchestrator/references/routines.md
 public-files.txt
 pyproject.toml
+scripts/check.sh
 scripts/check_release.py
 scripts/probe_cloud_capabilities.py
 scripts/run_live_acceptance.py

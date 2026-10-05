@@ -111,10 +111,8 @@ available in this release.
 ## Develop
 
 ```console
-uv sync --group dev
-uv run pytest -q
-uv run mypy --strict src
-uv run ruff check .
+bash scripts/setup.sh
+uv run --locked pytest && bash scripts/check.sh
 ```
 
 See [maintainer notes](docs/maintainer.md) and the
