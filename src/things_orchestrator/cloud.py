@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import json
-import re
 import time
 import zlib
 from base64 import b64encode
@@ -220,10 +219,6 @@ class HistoryBatch:
 
 class HistoryIdentityChanged(CloudError):
     """The account now points at a replacement history."""
-
-
-_VERSIONED_ENTITY = re.compile(r"^(Task|Area|Tag|ChecklistItem)\d+$")
-_KNOWN_VERSIONED_ENTITIES = _TASK_KINDS | _AREA_KINDS | _TAG_KINDS | _CHECKLIST_KINDS
 
 
 def _freeze_mapping(value: dict[str, Any]) -> dict[str, object]:
@@ -455,10 +450,7 @@ class CloudClient:
                     or not isinstance(payload, dict)
                 ):
                     raise CloudError("Things Cloud history event was malformed")
-                if (
-                    _VERSIONED_ENTITY.fullmatch(entity)
-                    and entity not in _KNOWN_VERSIONED_ENTITIES
-                ):
+                if _unsupported_versioned_entity(entity):
                     raise CloudError(
                         f"Unsupported Things Cloud entity version: {entity}"
                     )
@@ -604,7 +596,7 @@ def fold_events(events: list[dict[str, Any]], *, library: MemoryLibrary) -> None
     for event in events:
         kind = str(event.get("e") or "")
         if _unsupported_versioned_entity(kind):
-            raise CloudError(f"unsupported Things Cloud entity: {kind}")
+            raise CloudError(f"Unsupported Things Cloud entity version: {kind}")
 
     checklists: list[dict[str, Any]] = []
     for event in events:
@@ -822,16 +814,7 @@ def _fold_checklist(
                 line for line in parent.checklists if line.uuid != uuid
             ]
         return
-    existing: ChecklistLine | None = None
-    host: Record | None = None
-    for parent in library.records.values():
-        for line in parent.checklists:
-            if line.uuid == uuid:
-                existing = line
-                host = parent
-                break
-        if existing is not None:
-            break
+    host, existing = library._find_checklist(uuid)  # noqa: SLF001
     raw_parents = payload.get("ts")
     if raw_parents is None:
         parents = [host.uuid] if host is not None else []
@@ -844,10 +827,7 @@ def _fold_checklist(
         title = str(payload["tt"])
     status: Status = existing.status if existing is not None else "open"
     if payload.get("ss") is not None:
-        status_code = int(payload["ss"])
-        status = (
-            "done" if status_code == 3 else "dropped" if status_code == 2 else "open"
-        )
+        status = _status_from_code(payload["ss"])
     index = existing.sort_index if existing is not None else 0
     if payload.get("ix") is not None:
         index = int(payload["ix"])
