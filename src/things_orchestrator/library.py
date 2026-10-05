@@ -374,20 +374,6 @@ class MemoryLibrary:
     def _open(self) -> list[Record]:
         return [item for item in self.records.values() if item.is_open()]
 
-    def get(self, value: str) -> Record | None:
-        kind, uuid = parse_id(value)
-        item = self.records.get(uuid)
-        if item is None:
-            matches = [
-                candidate
-                for candidate in self.records.values()
-                if candidate.id == value
-            ]
-            return matches[0] if len(matches) == 1 else None
-        if kind is not None and item.public_kind != kind:
-            return None
-        return item
-
     def today(self, *, today: date) -> list[Record]:
         ranked: list[tuple[int, Record]] = []
         for item in self._open():
@@ -438,25 +424,6 @@ class MemoryLibrary:
     def trash(self) -> list[Record]:
         hits = [item for item in self.records.values() if item.trashed]
         return sorted(hits, key=lambda item: (item.kind, item.sort_index, item.title))
-
-    def audit(self) -> list[Record]:
-        kind_order = {"area": 0, "project": 1, "heading": 2, "task": 3}
-        items = [
-            item
-            for item in self.records.values()
-            if not item.trashed
-            and item.status == "open"
-            and item.recurrence.role != "template"
-        ]
-        items.sort(
-            key=lambda item: (
-                kind_order.get(item.public_kind, 9),
-                item.sort_index,
-                item.title.casefold(),
-                item.uuid,
-            )
-        )
-        return items
 
     def heading_title(self, item: Record) -> str | None:
         if item.heading_uuid and item.heading_uuid in self.records:
@@ -518,6 +485,12 @@ class MemoryLibrary:
     def areas(self) -> list[Record]:
         return sorted(
             [item for item in self._open() if item.kind == "area"],
+            key=lambda item: (item.sort_index, item.title),
+        )
+
+    def projects(self) -> list[Record]:
+        return sorted(
+            [item for item in self._open() if item.kind == "project"],
             key=lambda item: (item.sort_index, item.title),
         )
 
