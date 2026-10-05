@@ -611,7 +611,7 @@ def test_task_creates_and_legacy_mutations_emit_task7(tmp_path: Path) -> None:
 @pytest.mark.parametrize("entity", ["Task8", "Area4", "Tag5", "ChecklistItem4"])
 def test_fold_rejects_unknown_versioned_entities(entity: str) -> None:
     library = MemoryLibrary()
-    with pytest.raises(CloudError, match="unsupported Things Cloud entity"):
+    with pytest.raises(CloudError, match="Unsupported Things Cloud entity version"):
         fold_events(
             [
                 {
