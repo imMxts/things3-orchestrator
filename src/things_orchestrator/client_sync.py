@@ -31,14 +31,14 @@ from .client_bundle import (
     parse_client_bundle,
 )
 from .config import ConfigError, McpBearer, McpUrl, _atomic_replace, normalize_mcp_url
+from .deployment import CLIENT_BUNDLE_PATH
 from .tools import (
-    CLIENT_BUNDLE_PATH,
-    ITEM_ID,
     advertised_tool_payload,
     content_sha256,
     hash_payload,
     tool_discovery_hash,
 )
+from .v2 import ITEM_ID
 
 MARKER_NAME = ".things-orchestrator-client.json"
 PENDING_NAME = ".things-orchestrator-client.pending.json"

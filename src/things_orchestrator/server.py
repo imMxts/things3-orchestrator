@@ -32,13 +32,10 @@ from starlette.routing import Route
 from starlette.types import Receive, Scope, Send
 
 from .client_bundle import encode_client_bundle
-from .deployment import health_payload, package_version
-from .tools import (
-    CLIENT_BUNDLE_PATH,
-    ITEM_ID,
-    advertised_tools,
-)
+from .deployment import CLIENT_BUNDLE_PATH, health_payload, package_version
+from .tools import advertised_tools
 from .v2 import (
+    ITEM_ID,
     MODELS,
     PublicIssue,
     PublicResult,

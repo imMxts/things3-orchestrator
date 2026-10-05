@@ -2,6 +2,9 @@
 
 ## Unreleased
 
+- Move `ITEM_ID` to `v2.py` and the client-bundle path/format constants next
+  to the encoder and health payload. `tools.py` imports `v2` at module level
+  and no longer re-exports those constants.
 - Trim unpublished internal ReadCall language after the three-tool read
   surface retired: drop audit/system/project/area views, `signals_any`,
   logbook from/to, ReviewSection, and unused Result.receipt. Registries

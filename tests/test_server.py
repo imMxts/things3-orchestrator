@@ -7,9 +7,9 @@ from jsonschema import validate
 from mcp.types import TextContent, ToolAnnotations
 from starlette.testclient import TestClient
 
+from things_orchestrator.client_bundle import CLIENT_BUNDLE_FORMAT_VERSION
 from things_orchestrator.library import MemoryLibrary, Record
 from things_orchestrator.server import ThingsMCPServer, bearer_matches
-from things_orchestrator.tools import CLIENT_BUNDLE_FORMAT_VERSION
 from things_orchestrator.v2 import PublicResult
 from things_orchestrator.workspace import ThingsWorkspace
 

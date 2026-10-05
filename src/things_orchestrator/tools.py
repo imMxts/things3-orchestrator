@@ -8,10 +8,7 @@ from typing import Any, cast
 
 from mcp.types import Tool, ToolAnnotations
 
-ITEM_ID = r"^(task|project|area|heading):[^\s:]+$"
-
-CLIENT_BUNDLE_PATH = "/client/bundle"
-CLIENT_BUNDLE_FORMAT_VERSION = 1
+from .v2 import DESCRIPTIONS, DISCOVERY_MODELS, MODELS, PublicResult, flat_schema
 
 _READ_NAMES = frozenset(("things_view", "things_find", "things_get", "things_receipt"))
 _READ_ONLY = ToolAnnotations(
@@ -31,15 +28,11 @@ _IDEMPOTENT_WRITE = ToolAnnotations(
 def advertised_output_schema() -> dict[str, Any]:
     """Flattened PublicResult schema that tolerates additive object properties."""
 
-    from .v2 import PublicResult, flat_schema
-
     return cast(dict[str, Any], _allow_additional_object_properties(flat_schema(PublicResult)))
 
 
 def advertised_tools() -> tuple[Tool, ...]:
     """Exact tools/list contract: discovery inputs, additive outputs, annotations."""
-
-    from .v2 import DESCRIPTIONS, DISCOVERY_MODELS, MODELS, flat_schema
 
     output_schema = advertised_output_schema()
     return tuple(

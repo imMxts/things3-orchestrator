@@ -15,11 +15,11 @@ from mcp.types import Implementation, Tool
 
 from .config import McpBearer, McpUrl
 from .deployment import (
+    CLIENT_BUNDLE_PATH,
     DeploymentIdentity,
     installed_identity,
 )
 from .tools import (
-    CLIENT_BUNDLE_PATH,
     tool_contract_hash,
     tool_discovery_hash,
     tool_schema_hash,
