@@ -44,7 +44,6 @@ from .v2 import (
     PublicResult,
     ThingsV2,
 )
-from .workspace import ThingsWorkspace
 
 _LOGGER = logging.getLogger("things_orchestrator")
 
@@ -98,11 +97,11 @@ class ThingsMCPServer:
 
     def __init__(
         self,
-        workspace: ThingsWorkspace | ThingsV2,
+        workspace: ThingsV2,
         *,
         routines: RoutineHTTPComposition | None = None,
     ) -> None:
-        self._interface = workspace if isinstance(workspace, ThingsV2) else ThingsV2(workspace)
+        self._interface = workspace
         self._lock = anyio.Lock()
         self._routines = routines or RoutineHTTPComposition.disabled()
         self._client_bundle_bytes: bytes | None = None

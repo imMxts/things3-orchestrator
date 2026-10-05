@@ -31,6 +31,7 @@ from things_orchestrator.routines_store import RoutineStore, StoredEvent
 from things_orchestrator.routines_webhook import DeliveryResult
 from things_orchestrator.server import RoutineHTTPComposition, ThingsMCPServer
 from things_orchestrator.service import render_launchd_plist, render_systemd_unit
+from things_orchestrator.v2 import ThingsV2
 from things_orchestrator.workspace import ThingsWorkspace
 
 
@@ -215,7 +216,7 @@ def test_malformed_config_fails_closed_before_factory(
 
 
 def test_authenticated_health_reports_disabled_without_routine_resources() -> None:
-    server = ThingsMCPServer(ThingsWorkspace(MemoryLibrary()))
+    server = ThingsMCPServer(ThingsV2(ThingsWorkspace(MemoryLibrary())))
     app = server.build_http_app(token="secret")
 
     with TestClient(app) as client:
@@ -343,7 +344,7 @@ def test_lifecycle_factory_waits_for_explicit_readiness_and_shutdown_does_not_ha
 
     gate = _Gate()
     server = ThingsMCPServer(
-        ThingsWorkspace(MemoryLibrary()),
+        ThingsV2(ThingsWorkspace(MemoryLibrary())),
         routines=RoutineHTTPComposition.enabled(factory),
     )
     app = server.build_http_app(token="secret", readiness=gate)
@@ -416,7 +417,7 @@ def test_run_http_starts_routines_only_after_uvicorn_socket_startup(
     setattr(fake_uvicorn, "Server", FakeUvicornServer)
     monkeypatch.setitem(sys.modules, "uvicorn", fake_uvicorn)
     server = ThingsMCPServer(
-        ThingsWorkspace(MemoryLibrary()),
+        ThingsV2(ThingsWorkspace(MemoryLibrary())),
         routines=RoutineHTTPComposition.enabled(factory),
     )
 
@@ -474,7 +475,7 @@ def test_blocked_routines_cloud_call_does_not_delay_health_or_mcp_tools() -> Non
 
     gate = _Gate(ready=True)
     server = ThingsMCPServer(
-        ThingsWorkspace(MemoryLibrary()),
+        ThingsV2(ThingsWorkspace(MemoryLibrary())),
         routines=RoutineHTTPComposition.enabled(factory),
     )
     app = server.build_http_app(token="secret", readiness=gate)

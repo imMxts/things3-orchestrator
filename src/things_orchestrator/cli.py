@@ -72,6 +72,7 @@ from .routines_store import RoutineStore
 from .routines_webhook import build_webhook
 from .server import RoutineHTTPComposition, ThingsMCPServer
 from .service import ServiceApplyError, resolve_console_script, service_action
+from .v2 import ThingsV2
 from .workspace import ThingsWorkspace
 
 _LOGIN = (
@@ -132,7 +133,6 @@ def build_parser() -> argparse.ArgumentParser:
     )
     login.add_argument(
         "--url",
-        "--public-url",
         dest="public_url",
         default="",
         help="HTTPS origin or /mcp URL saved as the canonical MCP endpoint",
@@ -875,7 +875,7 @@ def _server(
     routines: RoutineHTTPComposition | None = None,
 ) -> ThingsMCPServer:
     workspace = _workspace(parser, credentials=credentials)
-    return ThingsMCPServer(workspace, routines=routines)
+    return ThingsMCPServer(ThingsV2(workspace), routines=routines)
 
 
 def _workspace(
