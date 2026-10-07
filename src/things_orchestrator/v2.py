@@ -158,6 +158,44 @@ class RepeatOn(StrictModel):
         return self
 
 
+def _repeat_rule_fields(
+    *,
+    unit: Literal["day", "week", "month", "year"] | None,
+    mode: Literal["fixed", "after_completion"] | None,
+    weekdays: list[Weekday] | None,
+    on: list[RepeatOn] | None,
+    until: str | None,
+    partial: bool,
+) -> None:
+    together = (
+        weekdays is not None and on is not None
+        if partial
+        else bool(weekdays and on)
+    )
+    if partial and weekdays is not None and len(weekdays) != len(set(weekdays)):
+        raise ValueError("weekdays cannot contain duplicates")
+    if not partial:
+        if on is not None and not on:
+            raise ValueError("on needs at least one selected date")
+        if together:
+            raise ValueError("use either weekdays or on")
+    if weekdays and unit is not None and unit != "week":
+        raise ValueError("weekdays need a weekly repeat rule")
+    if weekdays and mode == "after_completion":
+        raise ValueError("weekdays need fixed repeat mode")
+    if partial:
+        if together:
+            raise ValueError("use either weekdays or on")
+        if on is not None and not on:
+            raise ValueError("on needs at least one selected date")
+    if (on is not None if partial else True) and unit is not None:
+        _validate_repeat_on(unit, mode or "fixed", list(on or []))
+    if until is not None:
+        _valid_date(until)
+    if mode == "after_completion" and until is not None:
+        raise ValueError("after-completion repeats do not use an end date")
+
+
 class RepeatCreate(StrictModel):
     """Complete semantic repeat rule for a newly captured Task or Project."""
 
@@ -178,19 +216,14 @@ class RepeatCreate(StrictModel):
 
     @model_validator(mode="after")
     def valid_pattern(self) -> Self:
-        if "on" in self.model_fields_set and not self.on:
-            raise ValueError("on needs at least one selected date")
-        if self.weekdays and self.on:
-            raise ValueError("use either weekdays or on")
-        if self.weekdays and self.unit != "week":
-            raise ValueError("weekdays need a weekly repeat rule")
-        if self.weekdays and self.mode != "fixed":
-            raise ValueError("weekdays need fixed repeat mode")
-        _validate_repeat_on(self.unit, self.mode, self.on)
-        if self.until is not None:
-            _valid_date(self.until)
-        if self.mode == "after_completion" and self.until is not None:
-            raise ValueError("after-completion repeats do not use an end date")
+        _repeat_rule_fields(
+            unit=self.unit,
+            mode=self.mode,
+            weekdays=self.weekdays,
+            on=self.on if "on" in self.model_fields_set else None,
+            until=self.until,
+            partial=False,
+        )
         return self
 
 
@@ -226,23 +259,14 @@ class RepeatEdit(StrictModel):
             return self
         if not self.model_fields_set:
             raise ValueError("repeat needs a mode, unit, interval, or remove")
-        if self.weekdays is not None and len(self.weekdays) != len(set(self.weekdays)):
-            raise ValueError("weekdays cannot contain duplicates")
-        if self.unit is not None and self.unit != "week" and self.weekdays:
-            raise ValueError("weekdays need a weekly repeat rule")
-        if self.mode == "after_completion" and self.weekdays:
-            raise ValueError("weekdays need fixed repeat mode")
-        if self.weekdays is not None and self.on is not None:
-            raise ValueError("use either weekdays or on")
-        if self.on is not None:
-            if not self.on:
-                raise ValueError("on needs at least one selected date")
-            if self.unit is not None:
-                _validate_repeat_on(self.unit, self.mode or "fixed", self.on)
-        if self.until is not None:
-            _valid_date(self.until)
-        if self.mode == "after_completion" and self.until is not None:
-            raise ValueError("after-completion repeats do not use an end date")
+        _repeat_rule_fields(
+            unit=self.unit,
+            mode=self.mode,
+            weekdays=self.weekdays,
+            on=self.on,
+            until=self.until,
+            partial=True,
+        )
         return self
 
 

@@ -62,7 +62,13 @@ from .library import (
     public_id,
     template_uuid_of,
 )
-from .recurrence import RecurrenceReadError, RecurrenceState, RepeatMode, new_rule
+from .recurrence import (
+    JsonValue,
+    RecurrenceReadError,
+    RecurrenceState,
+    RepeatMode,
+    new_rule,
+)
 
 _READ_LIMIT = 40
 _BULK_TEXT_BUDGET = 100_000
@@ -138,6 +144,34 @@ def _repeat_offsets(
                 offset["wdo"] = ordinal
         offsets.append(offset)
     return offsets
+
+
+def _public_weekday_codes(repeat: dict[str, object]) -> list[int]:
+    return [
+        _WEEKDAY_CODES[cast(Any, weekday)]
+        for weekday in cast(list[object], repeat.get("weekdays", []))
+    ]
+
+
+def _public_repeat_until(repeat: dict[str, object]) -> date | None:
+    raw = repeat.get("until")
+    return date.fromisoformat(cast(str, raw)) if raw else None
+
+
+def _new_rule_from_public(
+    repeat: dict[str, object], *, unit: str, anchor: date
+) -> dict[str, JsonValue]:
+    return new_rule(
+        mode=cast(RepeatMode, repeat.get("mode", "fixed")),
+        unit=cast(Any, unit),
+        interval=cast(int, repeat.get("interval", 1)),
+        anchor=anchor,
+        weekday_codes=(
+            _public_weekday_codes(repeat) if "on" not in repeat else None
+        ),
+        offsets=cast(Any, _repeat_offsets(repeat, unit)),
+        until=_public_repeat_until(repeat),
+    )
 
 
 def _public_repeat_on(rule: RecurrenceState) -> list[RepeatOnFact]:
@@ -787,28 +821,10 @@ class ThingsWorkspace:
                 if isinstance(repeat, dict):
                     template_uuid = new_uuid()
                     try:
-                        rule = new_rule(
-                            mode=cast(RepeatMode, repeat.get("mode", "fixed")),
-                            unit=cast(Any, repeat["unit"]),
-                            interval=cast(int, repeat.get("interval", 1)),
+                        rule = _new_rule_from_public(
+                            repeat,
+                            unit=cast(str, repeat["unit"]),
                             anchor=start or self._clock().date(),
-                            weekday_codes=[
-                                _WEEKDAY_CODES[cast(Any, weekday)]
-                                for weekday in cast(
-                                    list[object], repeat.get("weekdays", [])
-                                )
-                            ]
-                            if "on" not in repeat
-                            else None,
-                            offsets=cast(
-                                Any,
-                                _repeat_offsets(repeat, cast(str, repeat["unit"])),
-                            ),
-                            until=(
-                                date.fromisoformat(cast(str, repeat["until"]))
-                                if repeat.get("until")
-                                else None
-                            ),
                         )
                     except ValueError as error:
                         return {
@@ -1448,23 +1464,10 @@ class ThingsWorkspace:
                 }
             template_uuid = new_uuid()
             try:
-                rule = new_rule(
-                    mode=cast(RepeatMode, repeat.get("mode", "fixed")),
-                    unit=cast(Any, unit),
-                    interval=cast(int, repeat.get("interval", 1)),
+                rule = _new_rule_from_public(
+                    repeat,
+                    unit=unit,
                     anchor=projected.start or self._clock().date(),
-                    weekday_codes=[
-                        _WEEKDAY_CODES[cast(Any, weekday)]
-                        for weekday in cast(list[object], repeat.get("weekdays", []))
-                    ]
-                    if "on" not in repeat
-                    else None,
-                    offsets=cast(Any, _repeat_offsets(repeat, unit)),
-                    until=(
-                        date.fromisoformat(cast(str, repeat["until"]))
-                        if repeat.get("until")
-                        else None
-                    ),
                 )
             except ValueError as error:
                 return {
@@ -1807,10 +1810,7 @@ class ThingsWorkspace:
                     unit=cast(Any, repeat.get("unit")),
                     interval=cast(int | None, repeat.get("interval")),
                     weekday_codes=(
-                        [
-                            _WEEKDAY_CODES[cast(Any, weekday)]
-                            for weekday in cast(list[object], repeat["weekdays"])
-                        ]
+                        _public_weekday_codes(repeat)
                         if "weekdays" in repeat
                         else None
                     ),
@@ -1828,11 +1828,7 @@ class ThingsWorkspace:
                         if "on" in repeat
                         else None
                     ),
-                    until=(
-                        date.fromisoformat(cast(str, repeat["until"]))
-                        if repeat.get("until")
-                        else None
-                    ),
+                    until=_public_repeat_until(repeat),
                     until_set="until" in repeat,
                 )
             except RecurrenceReadError as error:
