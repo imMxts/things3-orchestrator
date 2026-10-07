@@ -938,7 +938,6 @@ class CloudLibrary(MemoryLibrary):
         verified = self._verified_titles(writes)
         return ApplyResult(
             verified=verified,
-            created=self._created_from_pull(writes),
             read_back_verified=True,
         )
 
@@ -1030,20 +1029,6 @@ class CloudLibrary(MemoryLibrary):
             elif write.title:
                 verified.append(write.title)
         return list(dict.fromkeys(verified))
-
-    def _created_from_pull(self, writes: list[Write]) -> dict[str, str]:
-        created: dict[str, str] = {}
-        for write in writes:
-            if write.action == "ensure_tag":
-                title = write.title or ""
-                uuid = self.tag_uuid(title)
-                if uuid is not None:
-                    created[title or uuid] = uuid
-            elif write.action in {"create", "create_heading"}:
-                item = self.records.get(write.uuid)
-                if item is not None:
-                    created[item.title] = item.id
-        return created
 
     def _restore_cache(self, history_id: str) -> bool:
         if not self._cache.is_file():

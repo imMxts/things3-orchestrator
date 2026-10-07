@@ -1099,7 +1099,6 @@ class ThingsV2:
 
     def _mutation(self, result: dict[str, object]) -> PublicResult:
         item_ids = cast(list[str], result.pop("item_ids", []))
-        result.pop("_fresh_items", False)
         items = [
             self._item(
                 self.workspace._fact(
