@@ -62,7 +62,13 @@ from .library import (
     public_id,
     template_uuid_of,
 )
-from .recurrence import JsonValue, RecurrenceReadError, RecurrenceState, RepeatMode, new_rule
+from .recurrence import (
+    JsonValue,
+    RecurrenceReadError,
+    RecurrenceState,
+    RepeatMode,
+    new_rule,
+)
 
 _READ_LIMIT = 40
 _BULK_TEXT_BUDGET = 100_000
