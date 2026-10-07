@@ -1231,11 +1231,7 @@ class _CloudPlanHandler(_MutationHandler[None]):
             mutation = _compile_mutation(write)
             mutation = self._prepare(mutation)
             mutation.dispatch(self)
-        envelopes = _coalesce_envelopes(self.envelopes)
-        uuids = [item.uuid for item in envelopes]
-        if len(uuids) != len(set(uuids)):
-            raise CloudError("planned envelope UUIDs must be unique")
-        return envelopes
+        return _coalesce_envelopes(self.envelopes)
 
     def _prepare(self, mutation: _Mutation) -> _Mutation:
         write = mutation.write
@@ -1610,27 +1606,9 @@ class _CloudEnvelopeHandler(_MutationHandler[Envelope]):
             if write.today_index is not None:
                 payload["ti"] = write.today_index
             if write.someday:
-                payload.update(
-                    {
-                        "st": 2,
-                        "sr": None,
-                        "tir": None,
-                        "ato": None,
-                        "rmd": None,
-                        "sb": 0,
-                    }
-                )
+                payload.update(_unschedule(st=2))
             elif write.anytime:
-                payload.update(
-                    {
-                        "st": 1,
-                        "sr": None,
-                        "tir": None,
-                        "ato": None,
-                        "rmd": None,
-                        "sb": 0,
-                    }
-                )
+                payload.update(_unschedule(st=1))
             elif write.tonight:
                 payload.update(
                     _schedule(
@@ -1643,16 +1621,7 @@ class _CloudEnvelopeHandler(_MutationHandler[Envelope]):
                 )
                 payload["sb"] = 1
             elif write.clear_start:
-                payload.update(
-                    {
-                        "st": 1,
-                        "sr": None,
-                        "tir": None,
-                        "ato": None,
-                        "rmd": None,
-                        "sb": 0,
-                    }
-                )
+                payload.update(_unschedule(st=1))
             elif write.start is not None:
                 payload.update(
                     _schedule(write.start, write.remind, today=write.owner_today)
@@ -1717,33 +1686,24 @@ def _placement(write: Write, current: Record | None = None) -> dict[str, Any]:
     elif write.into_kind == "area" and write.into_uuid:
         payload = {"ar": [write.into_uuid], "pr": [], "agr": []}
     elif write.kind == "project" or write.anytime:
-        return {
-            "pr": [],
-            "ar": [],
-            "agr": [],
-            "st": 1,
-            "sb": 0,
-            "sr": None,
-            "tir": None,
-            "ato": None,
-            "rmd": None,
-        }
+        return {"pr": [], "ar": [], "agr": [], **_unschedule(st=1)}
     else:
-        return {
-            "pr": [],
-            "ar": [],
-            "agr": [],
-            "st": 0,
-            "sb": 0,
-            "sr": None,
-            "tir": None,
-            "ato": None,
-            "rmd": None,
-        }
+        return {"pr": [], "ar": [], "agr": [], **_unschedule(st=0)}
     if _needs_anytime_list_state(write, current):
         # Native Inbox is st=0 even when pr or ar is set.
         payload["st"] = 1
     return payload
+
+
+def _unschedule(*, st: int) -> dict[str, Any]:
+    return {
+        "st": st,
+        "sr": None,
+        "tir": None,
+        "ato": None,
+        "rmd": None,
+        "sb": 0,
+    }
 
 
 def _schedule(
