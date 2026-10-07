@@ -42,9 +42,12 @@ RecurrenceKind = Literal[
 ]
 
 _DIAGNOSTIC_ID = r"^(task|project|area|heading|tag):[^\s:]+$"
-_CONTAINER_ID = r"^(trash|(project|area):[^\s:]+)$"
+_DESTINATION_CORE = r"(project|area):[^\s:]+"
+_DESTINATION_ID = rf"^{_DESTINATION_CORE}$"
+_CONTAINER_ID = rf"^(trash|{_DESTINATION_CORE})$"
 _CHECK_ID = r"^check:[^\s:]+$"
 _TAG_ID = r"^tag:[^\s:]+$"
+_TASK_OR_PROJECT_ID = r"^(task|project):[^\s:]+$"
 _HEADING_ID = r"^heading:[^\s:]+$"
 _ORDER_MIN = -(2**63)
 _ORDER_MAX = 2**63 - 1
