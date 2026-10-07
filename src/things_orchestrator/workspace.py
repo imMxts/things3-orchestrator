@@ -582,15 +582,9 @@ class ThingsWorkspace:
         end = self._clock().date()
         return end - timedelta(days=_LOGBOOK_DAYS - 1), end
 
-    def _heading_hidden_occupancy(
-        self, heading_uuid: str, *, listed: set[str] | None = None
-    ) -> tuple[int, list[str]]:
-        signals: list[str] = []
-        count = 0
+    def _heading_hidden_occupancy(self, heading_uuid: str) -> bool:
         for item in self._library.records.values():
             if item.heading_uuid != heading_uuid:
-                continue
-            if listed is not None and item.uuid in listed:
                 continue
             if (
                 not item.trashed
@@ -598,16 +592,8 @@ class ThingsWorkspace:
                 and item.recurrence.role != "template"
             ):
                 continue
-            count += 1
-            if item.trashed:
-                signals.append("trashed")
-            elif item.recurrence.role == "template":
-                signals.append("template")
-            elif item.status == "done":
-                signals.append("completed")
-            elif item.status == "dropped":
-                signals.append("canceled")
-        return count, list(dict.fromkeys(signals))
+            return True
+        return False
 
     def execute_v2(self, draft: object) -> JsonDict:
         """Prepare one immutable v2 operation and run or stage its manifest."""
@@ -698,8 +684,6 @@ class ThingsWorkspace:
                 )
         except AmbiguousV2Request:
             return self._ambiguous_v2_request()
-        if result.get("item_ids"):
-            return {**result, "_fresh_items": True}
         return result
 
     @staticmethod
@@ -3377,7 +3361,7 @@ class ThingsWorkspace:
             ordinary.append("someday")
         if item.trashed:
             ordinary.append("trashed")
-        if item.heading and self._heading_hidden_occupancy(item.uuid)[0]:
+        if item.heading and self._heading_hidden_occupancy(item.uuid):
             ordinary.append("has_hidden_occupants")
         if item.notes:
             ordinary.append("has_notes")

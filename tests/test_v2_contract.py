@@ -327,7 +327,6 @@ def test_adapter_verified_read_back_skips_a_duplicate_post_write_refresh() -> No
             result = super().apply(writes)
             return ApplyResult(
                 verified=result.verified,
-                created=result.created,
                 read_back_verified=True,
             )
 
@@ -1726,7 +1725,6 @@ def test_verified_provider_readback_can_settle_genuine_partial(
             result = MemoryLibrary.apply(self, writes[:1])
             return ApplyResult(
                 verified=result.verified,
-                created=result.created,
                 read_back_verified=True,
             )
 

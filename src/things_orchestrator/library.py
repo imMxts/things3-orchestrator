@@ -340,7 +340,6 @@ def _compile_mutation(write: Write) -> _Mutation:
 @dataclass
 class ApplyResult:
     verified: list[str]
-    created: dict[str, str]
     read_back_verified: bool = False
 
 
@@ -668,14 +667,12 @@ class _MemoryApplyHandler(_MutationHandler[None]):
 
     def __init__(self, library: MemoryLibrary) -> None:
         self.library = library
-        self.created: dict[str, str] = {}
         self.verified: list[str] = []
         self.tag_aliases: dict[str, str] = {}
 
     def result(self) -> ApplyResult:
         return ApplyResult(
             verified=list(dict.fromkeys(self.verified)),
-            created=self.created,
         )
 
     def apply(self, write: Write) -> None:
@@ -784,7 +781,6 @@ class _MemoryApplyHandler(_MutationHandler[None]):
             leavable=write.leavable,
         )
         self.library.records[record.uuid] = record
-        self.created[record.title] = record.id
         self.verified.append(record.title)
 
     def edit(self, mutation: _EditMutation) -> None:
@@ -943,12 +939,10 @@ class _MemoryApplyHandler(_MutationHandler[None]):
                 self.library.tags[write.uuid] = write.title or ""
                 self.library.tag_parents[write.uuid] = parents
                 self.tag_aliases[write.uuid] = write.uuid
-                self.created[write.title or write.uuid] = write.uuid
             else:
                 self.tag_aliases[write.uuid] = existing
                 if write.tag_parent_uuids is not None:
                     self.library.tag_parents[existing] = parents
-                self.created[write.title or existing] = existing
             return
         tag_uuid = self.tag_aliases.get(write.uuid, write.uuid)
         if mutation.action == "rename_tag":
