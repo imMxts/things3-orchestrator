@@ -13,7 +13,18 @@ from typing import Annotated, Any, Literal, Self, cast
 from pydantic import BaseModel, Field, field_validator, model_validator
 from pydantic.json_schema import SkipJsonSchema
 
-from .interface import ReadCall, StrictModel, TruncatedField, Weekday
+from .interface import (
+    _CHECK_ID,
+    _DESTINATION_ID,
+    _TAG_ID,
+    _TASK_OR_PROJECT_ID,
+    BULK_ID_LIMIT,
+    DETAIL_FIELDS,
+    ReadCall,
+    StrictModel,
+    TruncatedField,
+    Weekday,
+)
 from .journal import AmbiguousV2Request, same_account_id
 from .tools import ITEM_ID
 
@@ -392,7 +403,7 @@ class ViewCall(StrictModel):
 class FindCall(StrictModel):
     text: str | None = Field(default=None, min_length=1, max_length=500)
     within: str | None = Field(
-        default=None, pattern=r"^(project|area):[^\s:]+$", max_length=512
+        default=None, pattern=_DESTINATION_ID, max_length=512
     )
     limit: int = Field(default=20, ge=1, le=40)
     cursor: str | None = None
@@ -407,7 +418,7 @@ class FindCall(StrictModel):
 
 
 class GetCall(StrictModel):
-    ids: list[str] = Field(min_length=1, max_length=50)
+    ids: list[str] = Field(min_length=1, max_length=BULK_ID_LIMIT)
 
     @field_validator("ids")
     @classmethod
@@ -454,7 +465,7 @@ class _CaptureBase(StrictModel):
 
 class TaskCapture(_CaptureBase):
     kind: Literal["task"]
-    into_id: str | None = Field(default=None, pattern=r"^(project|area):[^\s:]+$")
+    into_id: str | None = Field(default=None, pattern=_DESTINATION_ID)
     repeat: RepeatCreate | None = Field(
         default=None,
         description="Optional complete semantic repeat rule for this Task.",
@@ -498,7 +509,7 @@ class CaptureDiscoveryItem(_CaptureBase):
     )
     into_id: str | None = Field(
         default=None,
-        pattern=r"^(project|area):[^\s:]+$",
+        pattern=_DESTINATION_ID,
         description="Optional exact destination. A Project destination is valid only for a Task.",
     )
     repeat: RepeatCreate | None = Field(
@@ -528,9 +539,10 @@ class CaptureDiscoveryCall(StrictModel):
         return self
 
 
-ExactTagId = Annotated[str, Field(pattern=r"^tag:[^\s:]+$", max_length=512)]
-ExactChecklistId = Annotated[
-    str, Field(pattern=r"^check:[^\s:]+$", max_length=512)
+ExactTagId = Annotated[str, Field(pattern=_TAG_ID, max_length=512)]
+ExactChecklistId = Annotated[str, Field(pattern=_CHECK_ID, max_length=512)]
+ExactTaskOrProjectId = Annotated[
+    str, Field(pattern=_TASK_OR_PROJECT_ID, max_length=512)
 ]
 
 
@@ -618,7 +630,7 @@ class UpdateFields(StrictModel):
     deadline: str | None = None
     remind_at: str | None = None
     into_id: str | SkipJsonSchema[None] = Field(
-        default=None, pattern=r"^(project|area):[^\s:]+$", max_length=512
+        default=None, pattern=_DESTINATION_ID, max_length=512
     )
     tags: TagDelta | SkipJsonSchema[None] = None
     checklist: ChecklistPatch | SkipJsonSchema[None] = None
@@ -693,7 +705,7 @@ class UpdateFields(StrictModel):
 
 
 class UpdateItem(StrictModel):
-    id: str = Field(pattern=r"^(task|project):[^\s:]+$", max_length=512)
+    id: ExactTaskOrProjectId
     set: UpdateFields
 
 
@@ -719,7 +731,7 @@ class IdBatchCall(StrictModel):
     def unique(cls, value: list[str]) -> list[str]:
         if len(value) != len(set(value)):
             raise ValueError("ids must be unique")
-        if any(re.fullmatch(r"(?:task|project):[^\s:]+", item) is None for item in value):
+        if any(re.fullmatch(_TASK_OR_PROJECT_ID, item) is None for item in value):
             raise ValueError("mutation ids must be exact Task or Project IDs")
         return value
 
@@ -1106,7 +1118,7 @@ class ThingsV2:
                     item,
                     full=True,
                     include_revision=False,
-                    detail=("notes", "checklist", "tags", "recurrence"),
+                    detail=DETAIL_FIELDS,
                 )
             )
             for item_id in item_ids
