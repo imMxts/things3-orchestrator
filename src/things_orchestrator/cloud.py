@@ -708,10 +708,7 @@ def fold_events(events: list[dict[str, Any]], *, library: MemoryLibrary) -> None
                 item.heading = False
                 item.kind = "project" if type_code == 1 else "task"
         if "ss" in payload and payload["ss"] is not None:
-            status = int(payload["ss"])
-            item.status = (
-                "done" if status == 3 else "dropped" if status == 2 else "open"
-            )
+            item.status = _status_from_code(payload["ss"])
         if "sp" in payload:
             item.completed_at = _native_datetime(payload.get("sp"))
         if "tr" in payload and payload["tr"] is not None:

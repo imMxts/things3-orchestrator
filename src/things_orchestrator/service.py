@@ -444,7 +444,7 @@ def _apply(
     platform: Literal["darwin", "linux"],
     uid: int,
     home: Path,
-    settle_timeout: float = 5.0,
+    settle_timeout: float = _SETTLE_TIMEOUT,
 ) -> None:
     try:
         _apply_unchecked(
